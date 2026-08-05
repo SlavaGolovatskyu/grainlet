@@ -19,6 +19,10 @@
       "types": "./forms.d.ts",
       "default": "./forms/index.js"
     },
+    "./auth": {
+      "types": "./auth.d.ts",
+      "default": "./auth/index.js"
+    },
     "./ssr": {
       "types": "./ssr.d.ts",
       "default": "./ssr/index.js"
@@ -46,6 +50,7 @@
     "index.d.ts",
     "route.d.ts",
     "forms.d.ts",
+    "auth.d.ts",
     "ssr.d.ts",
     "jsx-runtime.d.ts",
     "jsx-dev-runtime.d.ts",
@@ -54,12 +59,13 @@
     "core",
     "route",
     "forms",
+    "auth",
     "ssr",
     "README.md"
   ],
   "sideEffects": false,
   "scripts": {
-    "test": "node test/keyed-unmount.test.mjs && node test/virtual-list.test.mjs && node test/render-async.test.mjs && node test/for-bench-repro.test.mjs && node test/template-for-smoke.test.mjs && node test/forms-paths.test.mjs && node test/forms-createForm.test.mjs && node test/forms-provider-smoke.test.mjs && node test/forms-yup.test.mjs && node test/forms-validators.test.mjs"
+    "test": "node test/keyed-unmount.test.mjs && node test/virtual-list.test.mjs && node test/render-async.test.mjs && node test/for-bench-repro.test.mjs && node test/template-for-smoke.test.mjs && node test/forms-paths.test.mjs && node test/forms-createForm.test.mjs && node test/forms-provider-smoke.test.mjs && node test/forms-yup.test.mjs && node test/forms-validators.test.mjs && node test/auth-core.test.mjs && node test/auth-provider.test.mjs"
   },
   "peerDependencies": {
     "yup": "^1.0.0"
