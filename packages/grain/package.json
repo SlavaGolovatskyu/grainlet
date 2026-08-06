@@ -23,6 +23,10 @@
       "types": "./auth.d.ts",
       "default": "./auth/index.js"
     },
+    "./auth-sdk": {
+      "types": "./auth-sdk.d.ts",
+      "default": "./auth-sdk/index.js"
+    },
     "./i18n": {
       "types": "./i18n.d.ts",
       "default": "./i18n/index.js"
@@ -55,6 +59,7 @@
     "route.d.ts",
     "forms.d.ts",
     "auth.d.ts",
+    "auth-sdk.d.ts",
     "i18n.d.ts",
     "ssr.d.ts",
     "jsx-runtime.d.ts",
@@ -65,13 +70,14 @@
     "route",
     "forms",
     "auth",
+    "auth-sdk",
     "i18n",
     "ssr",
     "README.md"
   ],
   "sideEffects": false,
   "scripts": {
-    "test": "node test/keyed-unmount.test.mjs && node test/virtual-list.test.mjs && node test/render-async.test.mjs && node test/for-bench-repro.test.mjs && node test/template-for-smoke.test.mjs && node test/forms-paths.test.mjs && node test/forms-createForm.test.mjs && node test/forms-provider-smoke.test.mjs && node test/forms-yup.test.mjs && node test/forms-validators.test.mjs && node test/auth-core.test.mjs && node test/auth-provider.test.mjs && node test/i18n-core.test.mjs && node test/i18n-provider.test.mjs"
+    "test": "node test/keyed-unmount.test.mjs && node test/virtual-list.test.mjs && node test/render-async.test.mjs && node test/for-bench-repro.test.mjs && node test/template-for-smoke.test.mjs && node test/forms-paths.test.mjs && node test/forms-createForm.test.mjs && node test/forms-provider-smoke.test.mjs && node test/forms-yup.test.mjs && node test/forms-validators.test.mjs && node test/auth-core.test.mjs && node test/auth-provider.test.mjs && node test/auth-sdk-core.test.mjs && node test/auth-sdk-providers.test.mjs && node test/i18n-core.test.mjs && node test/i18n-provider.test.mjs"
   },
   "peerDependencies": {
     "yup": "^1.0.0"

@@ -60,12 +60,13 @@ export default defineConfig({
 | `grainlet/route` | History API routing (`Router`, `Route`, `Link`, …) |
 | `grainlet/forms` | Form state (`FormProvider`, `Field`, `createForm`, …) — see [forms/README.md](./forms/README.md) |
 | `grainlet/auth` | Session auth (`createAuth`, `AuthProvider`, `useSession`, …) — see [auth/README.md](./auth/README.md) |
+| `grainlet/auth-sdk` | Google, Apple, and GitHub OAuth integration — see [auth-sdk/README.md](./auth-sdk/README.md) |
 | `grainlet/i18n` | Translations (`createI18n`, `I18nProvider`, `useTranslation`, …) — see [i18n/README.md](./i18n/README.md) |
 | `grainlet/ssr` | Server render (`renderToString`, `renderToStringAsync`, …) |
 | `grainlet/jsx-runtime` | Automatic JSX runtime |
 | `grainlet-vite` | `grainJsx()` Vite plugin (separate package, `devDependency`) |
 
-> **Breaking:** Router and SSR APIs are no longer re-exported from `grainlet`. Import them from `grainlet/route` and `grainlet/ssr`. Forms, auth, and i18n live under `grainlet/forms`, `grainlet/auth`, and `grainlet/i18n` only.
+> **Breaking:** Router and SSR APIs are no longer re-exported from `grainlet`. Import them from `grainlet/route` and `grainlet/ssr`. Forms, auth, auth-sdk, and i18n live under their respective `grainlet/*` entry points only.
 
 ## Control flow
 
@@ -398,6 +399,12 @@ render(
 ```
 
 `useSession()` returns the auth client. Call accessors: `data()`, `status()` (`loading` | `authenticated` | `unauthenticated`), `error()`. Also: `signIn`, `signOut`, `getSession`, `refresh`, `update`. Default storage is memory-only; use `createLocalStorageAdapter()` to persist across reloads. Full guide: **[auth/README.md](./auth/README.md)**.
+
+For batteries-included Google, Apple, and GitHub sign-in, configure
+`createAuthSdk()` and add `GoogleSignIn(sdk)`, `AppleSignIn(sdk)`, and
+`GitHubSignIn(sdk)` to the providers array. The SDK handles provider scripts,
+popups, tokens, and calls to your backend. Full guide:
+**[auth-sdk/README.md](./auth-sdk/README.md)**.
 
 ## i18n
 

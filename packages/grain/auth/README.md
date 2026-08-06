@@ -5,6 +5,9 @@ package offers Auth.js-like session ergonomics without depending on Next.js or
 `next-auth`; your application remains responsible for its API endpoints,
 cookies, OAuth SDK, and account screens.
 
+For Google, Apple, and GitHub browser SDK loading, popup handling, and default
+API calls, use [`grainlet/auth-sdk`](../auth-sdk/README.md) with this package.
+
 ```js
 import {
   AuthProvider,
