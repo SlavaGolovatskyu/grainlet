@@ -1,0 +1,7 @@
+{
+  "title": "Dashboard",
+  "stats": {
+    "projects": "You have {count} active projects.",
+    "lastUpdated": "Updated just now"
+  }
+}

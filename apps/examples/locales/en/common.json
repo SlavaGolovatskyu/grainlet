@@ -1,0 +1,14 @@
+{
+  "language": "Language",
+  "english": "English",
+  "ukrainian": "Ukrainian",
+  "welcome": "Welcome, {name}!",
+  "segment": {
+    "title": {
+      "key": {
+        "first": "This text comes from segment.title.key.first"
+      }
+    }
+  },
+  "fallbackOnly": "This key exists only in the English fallback locale."
+}

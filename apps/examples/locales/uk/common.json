@@ -1,0 +1,13 @@
+{
+  "language": "Мова",
+  "english": "Англійська",
+  "ukrainian": "Українська",
+  "welcome": "Вітаємо, {name}!",
+  "segment": {
+    "title": {
+      "key": {
+        "first": "Цей текст отримано з segment.title.key.first"
+      }
+    }
+  }
+}

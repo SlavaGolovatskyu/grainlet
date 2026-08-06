@@ -1,0 +1,4 @@
+{
+  "title": "Profile namespace loaded lazily",
+  "description": "This JSON file was fetched only when profile translations were requested."
+}

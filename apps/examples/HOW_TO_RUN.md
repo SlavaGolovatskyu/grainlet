@@ -53,6 +53,7 @@ Only example `08-jsx-counter.html` works without a build tool (uses `jsx()` func
 | 21 | `21-forms-provider.html` | `grainlet/forms` FormProvider + rules | ✅ Yes |
 | 22 | `22-forms-field-array.html` | `FieldArray` push / remove | ✅ Yes |
 | 23 | `23-forms-i18n.html` | Lazy i18n validator messages (EN/UK) | ✅ Yes |
+| 24 | `24-i18n-namespaces.html` | JSON namespaces, deep keys, fallback, lazy loading | ✅ Yes |
 
 ## Troubleshooting
 

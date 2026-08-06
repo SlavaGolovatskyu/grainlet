@@ -94,6 +94,12 @@ Translated validation messages:
 - Lazy `() => t('validation.required')` on built-in validators
 - EN / UK locale toggle without remounting the form
 
+### 24-i18n-namespaces.html
+`grainlet/i18n` with app-owned JSON files:
+- `common`, `dashboard`, and lazy-loaded `profile` namespaces
+- Deep keys such as `segment.title.key.first`
+- EN / UK locale switching, interpolation, and fallback locale behavior
+
 ## Running the Examples
 
 1. Open any HTML file in a modern web browser
