@@ -1,0 +1,14 @@
+{
+  "app": {
+    "ready": "Grainlet + Vite готовий.",
+    "description": "Провайдери auth та i18n налаштовані для вашого проєкту."
+  },
+  "language": {
+    "english": "Англійська",
+    "ukrainian": "Українська"
+  },
+  "auth": {
+    "status": "Стан сесії: {status}"
+  },
+  "counter": "Лічильник: {count}"
+}

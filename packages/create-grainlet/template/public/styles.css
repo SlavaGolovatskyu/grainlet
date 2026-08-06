@@ -52,6 +52,31 @@ body {
   color: #475569;
 }
 
+.page__languages {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.page__language {
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  color: #334155;
+  background: #fff;
+  cursor: pointer;
+}
+
+.page__language.is-active {
+  border-color: #0f172a;
+  color: #fff;
+  background: #0f172a;
+}
+
+.page__status {
+  color: #475569;
+}
+
 .page__button {
   appearance: none;
   border: 0;

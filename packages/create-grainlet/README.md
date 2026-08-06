@@ -18,4 +18,12 @@ The generated project depends on:
 | `vite` | Bundler (devDependency) |
 | `@babel/core`, `@babel/plugin-syntax-jsx` | Peers for the Vite plugin (devDependencies) |
 
-Scaffold includes a `public/` folder for static assets (`styles.css`, `images/`) served at `/`.
+The generated app includes:
+
+- `AuthProvider` and a starter client in `src/auth.js` for `grainlet/auth`
+- `I18nProvider`, English/Ukrainian JSON files, and namespace setup in
+  `src/i18n.js` for `grainlet/i18n`
+- A `public/` folder for static assets (`styles.css`, `images/`) served at `/`
+
+Both features are subpath exports of the `grainlet` dependency, so no separate
+runtime packages are required.

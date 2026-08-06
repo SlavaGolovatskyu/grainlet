@@ -1,0 +1,14 @@
+{
+  "app": {
+    "ready": "Grainlet + Vite is ready.",
+    "description": "Auth and i18n providers are configured for your project."
+  },
+  "language": {
+    "english": "English",
+    "ukrainian": "Ukrainian"
+  },
+  "auth": {
+    "status": "Session status: {status}"
+  },
+  "counter": "Count: {count}"
+}
