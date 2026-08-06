@@ -1,6 +1,6 @@
 # grainlet
 
-Fine-grained reactive UI: **signals**, **JSX**, **History API routing**, and **SSR / hydrate**.
+Fine-grained reactive UI: **signals**, **JSX**, **forms**, **auth**, **i18n**, **History API routing**, and **SSR / hydrate**.
 
 ## Install
 
@@ -59,11 +59,13 @@ export default defineConfig({
 | `grainlet` | Core API (signals, flow, render, hydrate) |
 | `grainlet/route` | History API routing (`Router`, `Route`, `Link`, …) |
 | `grainlet/forms` | Form state (`FormProvider`, `Field`, `createForm`, …) — see [forms/README.md](./forms/README.md) |
+| `grainlet/auth` | Session auth (`createAuth`, `AuthProvider`, `useSession`, …) — see [auth/README.md](./auth/README.md) |
+| `grainlet/i18n` | Translations (`createI18n`, `I18nProvider`, `useTranslation`, …) — see [i18n/README.md](./i18n/README.md) |
 | `grainlet/ssr` | Server render (`renderToString`, `renderToStringAsync`, …) |
 | `grainlet/jsx-runtime` | Automatic JSX runtime |
 | `grainlet-vite` | `grainJsx()` Vite plugin (separate package, `devDependency`) |
 
-> **Breaking:** Router and SSR APIs are no longer re-exported from `grainlet`. Import them from `grainlet/route` and `grainlet/ssr`. Forms live under `grainlet/forms` only.
+> **Breaking:** Router and SSR APIs are no longer re-exported from `grainlet`. Import them from `grainlet/route` and `grainlet/ssr`. Forms, auth, and i18n live under `grainlet/forms`, `grainlet/auth`, and `grainlet/i18n` only.
 
 ## Control flow
 
@@ -314,6 +316,138 @@ const form = createForm({
 ```
 
 Supports nested paths (`social.facebook`, `friends[0]`), field-level `validate={[required(), isEmail()]}`, optional Yup `validationSchema`, and `FieldArray`. Full guide: **[forms/README.md](./forms/README.md)**.
+
+## Auth
+
+Headless, Auth.js-style sessions — import from **`grainlet/auth`**. Your app owns the API, cookies, and OAuth SDK:
+
+```js
+import { Show, render } from 'grainlet';
+import {
+  AuthProvider,
+  Credentials,
+  createAuth,
+  createLocalStorageAdapter,
+  useSession,
+  ProtectedRoute,
+} from 'grainlet/auth';
+
+const auth = createAuth({
+  providers: [
+    Credentials({
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
+      },
+      authorize: (credentials) =>
+        api.post('/api/auth/login', credentials),
+    }),
+  ],
+  refresh: ({ userId, refreshToken }) =>
+    api.post('/api/auth/refresh', { userId, refreshToken }),
+  storage: createLocalStorageAdapter(),
+});
+
+function AccountMenu() {
+  const session = useSession();
+
+  return (
+    <Show
+      when={() => session.status() === 'authenticated'}
+      fallback={
+        <button
+          type="button"
+          onClick={() =>
+            session.signIn('credentials', {
+              email: 'user@example.com',
+              password: 'secret',
+            })
+          }
+        >
+          Sign in
+        </button>
+      }
+    >
+      <span>{session.data()?.user.email}</span>
+      <button type="button" onClick={() => session.signOut()}>
+        Sign out
+      </button>
+    </Show>
+  );
+}
+
+function SettingsRoute() {
+  return (
+    <ProtectedRoute
+      redirectTo="/auth/signin"
+      loadingFallback={<p>Checking session…</p>}
+    >
+      <Settings />
+    </ProtectedRoute>
+  );
+}
+
+render(
+  () => (
+    <AuthProvider client={auth}>
+      <AccountMenu />
+    </AuthProvider>
+  ),
+  document.getElementById('app')
+);
+```
+
+`useSession()` returns the auth client. Call accessors: `data()`, `status()` (`loading` | `authenticated` | `unauthenticated`), `error()`. Also: `signIn`, `signOut`, `getSession`, `refresh`, `update`. Default storage is memory-only; use `createLocalStorageAdapter()` to persist across reloads. Full guide: **[auth/README.md](./auth/README.md)**.
+
+## i18n
+
+Namespaced JSON translations — import from **`grainlet/i18n`**:
+
+```js
+import { render } from 'grainlet';
+import { createI18n, I18nProvider, useTranslation } from 'grainlet/i18n';
+import enCommon from './locales/en/common.json';
+import ukCommon from './locales/uk/common.json';
+
+// en/common.json — { "welcome": "Welcome, {name}", "actions": { "continue": "Continue" } }
+
+const i18n = createI18n({
+  locale: 'en',
+  fallbackLocale: 'en',
+  resources: {
+    en: {
+      common: enCommon,
+      // Lazy namespace: auth: () => import('./locales/en/auth.json'),
+    },
+    uk: { common: ukCommon },
+  },
+});
+
+function Welcome() {
+  const { t, locale, setLocale } = useTranslation('common');
+
+  return (
+    <main>
+      <h1>{t('welcome', { name: 'Mike' })}</h1>
+      <p>{t('actions.continue')}</p>
+      <button type="button" onClick={() => setLocale(locale() === 'en' ? 'uk' : 'en')}>
+        Switch language
+      </button>
+    </main>
+  );
+}
+
+render(
+  () => (
+    <I18nProvider client={i18n}>
+      <Welcome />
+    </I18nProvider>
+  ),
+  document.getElementById('app')
+);
+```
+
+Pass a namespace to `useTranslation`, then use keys relative to that file. Nested keys use dot paths (`segment.title.key`). Missing keys fall back to `fallbackLocale`, then the key string. For form validators, pass lazy messages: `required(() => t('validation.required'))`. Full guide: **[i18n/README.md](./i18n/README.md)**.
 
 ## Routing
 
