@@ -54,6 +54,38 @@ function cssSize(value) {
   return typeof value === 'number' ? `${value}px` : String(value);
 }
 
+const VIRTUAL_LIST_PROPS = new Set([
+  'each',
+  'orientation',
+  'itemHeight',
+  'itemWidth',
+  'height',
+  'width',
+  'overscan',
+  'debounceTime',
+  'onEndReached',
+  'endReachedThreshold',
+  'endReachedLoading',
+  'keyed',
+  'fallback',
+  'children',
+  'ref',
+  'apiRef',
+  'class',
+  'className',
+  'style',
+  'onScroll',
+  'onscroll',
+]);
+
+function collectScrollerProps(props) {
+  const out = {};
+  for (const key of Object.keys(props)) {
+    if (!VIRTUAL_LIST_PROPS.has(key)) out[key] = props[key];
+  }
+  return out;
+}
+
 function mergeScrollerStyle(horizontal, heightProp, widthProp, styleProp) {
   const base = {
     overflow: 'auto',
@@ -139,6 +171,149 @@ function maybeFireEndReached(bag, el) {
   }
 }
 
+function syncScrollerMeasurement(bag) {
+  const el = bag.el;
+  if (!el) return;
+
+  if (bag.viewportProvided) {
+    bag.ro?.disconnect();
+    bag.ro = null;
+    return;
+  }
+
+  bag.setMeasuredMain(
+    bag.horizontal ? el.clientWidth : el.clientHeight
+  );
+  if (!bag.ro && typeof ResizeObserver !== 'undefined') {
+    bag.ro = new ResizeObserver(() => {
+      if (!bag.el) return;
+      bag.setMeasuredMain(
+        bag.horizontal ? bag.el.clientWidth : bag.el.clientHeight
+      );
+    });
+    bag.ro.observe(el);
+  }
+}
+
+function notifyExternalRef(bag, callbackKey, notifiedKey, value) {
+  const callback = bag[callbackKey];
+  if (typeof callback !== 'function' || bag[notifiedKey] === callback) return;
+  callback(value);
+  bag[notifiedKey] = callback;
+}
+
+function updateExternalRef(bag, callbackKey, notifiedKey, next, value) {
+  const callback = typeof next === 'function' ? next : null;
+  const notified = bag[notifiedKey];
+  bag[callbackKey] = callback;
+  if (notified === callback) return;
+
+  if (typeof notified === 'function') notified(null);
+  bag[notifiedKey] = null;
+  if (bag.el && callback) {
+    callback(value);
+    bag[notifiedKey] = callback;
+  }
+}
+
+function clampScrollOffset(bag, offset) {
+  const viewport =
+    bag.viewportSize ||
+    (bag.el
+      ? bag.horizontal
+        ? bag.el.clientWidth
+        : bag.el.clientHeight
+      : 0);
+  const max = Math.max(0, bag.count * bag.itemSize - viewport);
+  return Math.min(max, Math.max(0, offset));
+}
+
+function scrollToOffset(bag, offset, options = {}) {
+  const el = bag.el;
+  const raw = Number(offset);
+  if (!el || !Number.isFinite(raw)) return false;
+
+  const target = clampScrollOffset(bag, raw);
+  const behavior = options?.behavior === 'smooth' ? 'smooth' : 'auto';
+  const axis = bag.horizontal ? 'left' : 'top';
+
+  if (behavior === 'smooth' && typeof el.scrollTo === 'function') {
+    el.scrollTo({ [axis]: target, behavior });
+    return true;
+  }
+
+  if (bag.horizontal) el.scrollLeft = target;
+  else el.scrollTop = target;
+  applyScrollOffset(bag, bag.setScrollOffset, target);
+  maybeFireEndReached(bag, el);
+  return true;
+}
+
+function scrollToIndex(bag, index, options = {}) {
+  if (bag.count === 0 || bag.itemSize <= 0) return false;
+  const raw = Number(index);
+  if (!Number.isFinite(raw)) return false;
+
+  const resolvedIndex = Math.min(
+    bag.count - 1,
+    Math.max(0, Math.trunc(raw))
+  );
+  const itemStart = resolvedIndex * bag.itemSize;
+  const itemEnd = itemStart + bag.itemSize;
+  const viewport =
+    bag.viewportSize ||
+    (bag.el
+      ? bag.horizontal
+        ? bag.el.clientWidth
+        : bag.el.clientHeight
+      : 0);
+  const current = bag.el
+    ? bag.horizontal
+      ? bag.el.scrollLeft
+      : bag.el.scrollTop
+    : 0;
+
+  let target = itemStart;
+  switch (options?.align) {
+    case 'center':
+      target = itemStart - (viewport - bag.itemSize) / 2;
+      break;
+    case 'end':
+      target = itemEnd - viewport;
+      break;
+    case 'auto':
+      if (itemStart < current) target = itemStart;
+      else if (itemEnd > current + viewport) target = itemEnd - viewport;
+      else target = current;
+      break;
+    default:
+      break;
+  }
+
+  return scrollToOffset(bag, target, options);
+}
+
+function createVirtualListApi(bag) {
+  return Object.freeze({
+    scrollToIndex(index, options) {
+      return scrollToIndex(bag, index, options);
+    },
+    scrollToItem(item, options) {
+      const index = bag.items.indexOf(item);
+      return index >= 0 ? scrollToIndex(bag, index, options) : false;
+    },
+    scrollToOffset(offset, options) {
+      return scrollToOffset(bag, offset, options);
+    },
+    getVisibleRange() {
+      return { ...bag.range };
+    },
+    getElement() {
+      return bag.el;
+    },
+  });
+}
+
 /** Leading + trailing throttle so the window still tracks during fast flings. */
 function scheduleScrollApply(bag, setScrollOffset, scroll, el) {
   bag.pendingScroll = scroll;
@@ -183,7 +358,12 @@ function scheduleScrollApply(bag, setScrollOffset, scroll, el) {
  * Windowed list: only mounts items in the viewport (+ overscan).
  * Fixed main-axis size required (`itemHeight` vertical / `itemWidth` horizontal).
  *
- *   <VirtualList each={items()} itemHeight={48} height={400}>
+ *   <VirtualList
+ *     each={items()}
+ *     itemHeight={48}
+ *     height={400}
+ *     aria-label="Items"
+ *   >
  *     {(item) => <div>{item.label}</div>}
  *   </VirtualList>
  *
@@ -191,11 +371,16 @@ function scheduleScrollApply(bag, setScrollOffset, scroll, el) {
  *     each={items()}
  *     itemHeight={48}
  *     height={400}
+ *     aria-label="Search results"
+ *     ref={(element) => (scroller = element)}
+ *     apiRef={(api) => (listApi = api)}
  *     onEndReached={loadMore}
  *     endReachedLoading={loading()}
  *   >
  *     {(item) => <div>{item.label}</div>}
  *   </VirtualList>
+ *
+ *   listApi?.scrollToIndex(100, { align: 'center', behavior: 'smooth' });
  */
 export function VirtualList(props) {
   const [getBag] = createSignal({
@@ -222,11 +407,23 @@ export function VirtualList(props) {
     endReachedArmed: true,
     lastCount: 0,
     wasEndReachedLoading: false,
+    items: [],
+    viewportProvided: false,
+    setMeasuredMain: null,
+    bindScroller: null,
+    consumerRef: null,
+    notifiedConsumerRef: null,
+    apiRef: null,
+    notifiedApiRef: null,
+    api: null,
+    userOnScroll: null,
+    userOnscroll: null,
   });
   const bag = getBag();
 
   const [scrollOffset, setScrollOffset] = createSignal(0);
   const [measuredMain, setMeasuredMain] = createSignal(0);
+  if (!bag.api) bag.api = createVirtualListApi(bag);
 
   if (!bag.cleanupRegistered) {
     bag.cleanupRegistered = true;
@@ -251,6 +448,23 @@ export function VirtualList(props) {
   const list = readProp(props.each);
   const items = normalizeEach(list);
   const count = items.length;
+  bag.items = items;
+  bag.count = count;
+
+  updateExternalRef(
+    bag,
+    'consumerRef',
+    'notifiedConsumerRef',
+    props.ref,
+    bag.el
+  );
+  updateExternalRef(
+    bag,
+    'apiRef',
+    'notifiedApiRef',
+    props.apiRef,
+    bag.api
+  );
 
   if (count === 0) {
     bag.rows.clear();
@@ -305,11 +519,15 @@ export function VirtualList(props) {
   bag.overscan = overscan;
   bag.count = count;
   bag.viewportSize = viewportSize;
+  bag.viewportProvided = viewportProp != null && viewportProp !== false;
   bag.debounceTime = debounceTime;
   bag.setScrollOffset = setScrollOffset;
+  bag.setMeasuredMain = setMeasuredMain;
   bag.onEndReached = onEndReached;
   bag.endReachedThreshold = endReachedThreshold;
   bag.endReachedLoading = endReachedLoading;
+  bag.userOnScroll = props.onScroll;
+  bag.userOnscroll = props.onscroll;
 
   let range;
   if (isServer()) {
@@ -341,32 +559,49 @@ export function VirtualList(props) {
   const totalMain = count * itemSize;
   const offset = range.start * itemSize;
 
-  const bindScroller = (el) => {
-    if (!el) {
-      bag.el = null;
-      return;
-    }
-    bag.el = el;
-    if (viewportProp == null || viewportProp === false) {
-      setMeasuredMain(horizontal ? el.clientWidth : el.clientHeight);
-      if (!bag.ro && typeof ResizeObserver !== 'undefined') {
-        bag.ro = new ResizeObserver(() => {
-          if (!bag.el) return;
-          setMeasuredMain(
-            bag.horizontal ? bag.el.clientWidth : bag.el.clientHeight
-          );
-        });
-        bag.ro.observe(el);
+  if (!bag.bindScroller) {
+    bag.bindScroller = (el) => {
+      if (!el) {
+        bag.ro?.disconnect();
+        bag.ro = null;
+        bag.el = null;
+        if (typeof bag.notifiedConsumerRef === 'function') {
+          bag.notifiedConsumerRef(null);
+          bag.notifiedConsumerRef = null;
+        }
+        if (typeof bag.notifiedApiRef === 'function') {
+          bag.notifiedApiRef(null);
+          bag.notifiedApiRef = null;
+        }
+        return;
       }
-    }
-    // Short lists that already fit the viewport should still be able to page.
-    if (onEndReached) {
+
+      bag.el = el;
+      syncScrollerMeasurement(bag);
+      // Short lists that already fit the viewport should still be able to page.
+      if (bag.onEndReached) {
+        queueMicrotask(() => maybeFireEndReached(bag, bag.el));
+      }
+      notifyExternalRef(
+        bag,
+        'consumerRef',
+        'notifiedConsumerRef',
+        el
+      );
+      notifyExternalRef(bag, 'apiRef', 'notifiedApiRef', bag.api);
+    };
+  }
+
+  if (bag.el) {
+    syncScrollerMeasurement(bag);
+    if (bag.onEndReached) {
       queueMicrotask(() => maybeFireEndReached(bag, bag.el));
     }
-  };
+  }
 
   const scrollerProps = {
-    ref: bindScroller,
+    ...collectScrollerProps(props),
+    ref: bag.bindScroller,
     class: props.class ?? props.className,
     style: mergeScrollerStyle(horizontal, heightProp, widthProp, props.style),
     'data-grainlet-virtual-list': '',
@@ -381,6 +616,15 @@ export function VirtualList(props) {
         const target = event.currentTarget;
         const scroll = bag.horizontal ? target.scrollLeft : target.scrollTop;
         scheduleScrollApply(bag, bag.setScrollOffset, scroll, target);
+        if (typeof bag.userOnScroll === 'function') {
+          bag.userOnScroll(event);
+        }
+        if (
+          typeof bag.userOnscroll === 'function' &&
+          bag.userOnscroll !== bag.userOnScroll
+        ) {
+          bag.userOnscroll(event);
+        }
       };
     }
     scrollerProps.onScroll = bag.onScroll;

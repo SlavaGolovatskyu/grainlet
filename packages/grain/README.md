@@ -103,9 +103,39 @@ import {
 Prefer these over `{cond() && <X/>}` so conditionals update without re-running the parent.
 
 ```js
-<VirtualList each={items()} itemHeight={48} height={400} overscan={5}>
+<VirtualList
+  each={items()}
+  itemHeight={48}
+  height={400}
+  overscan={5}
+  aria-label="Items"
+>
   {(item) => <div class="row">{item.label}</div>}
 </VirtualList>
+
+// The outer scroller accepts normal div props, a DOM ref, and an imperative API.
+let scroller;
+let listApi;
+
+<VirtualList
+  each={items()}
+  itemHeight={48}
+  height={400}
+  id="search-results"
+  aria-label="Search results"
+  data-testid="results-list"
+  ref={(element) => (scroller = element)}
+  apiRef={(api) => (listApi = api)}
+  onScroll={(event) => console.log(event.currentTarget.scrollTop)}
+>
+  {(item) => <div class="row">{item.label}</div>}
+</VirtualList>
+
+listApi?.scrollToIndex(250, { align: 'center', behavior: 'smooth' });
+listApi?.scrollToItem(items()[0]);
+listApi?.scrollToOffset(0);
+listApi?.getVisibleRange(); // { start, end }
+listApi?.getElement() === scroller; // true
 
 <VirtualList
   orientation="horizontal"
@@ -114,6 +144,9 @@ Prefer these over `{cond() && <X/>}` so conditionals update without re-running t
   width={480}
   height={80}
   debounceTime={32}
+  aria-label="Horizontal items"
+  data-layout="horizontal"
+  apiRef={(api) => (listApi = api)}
 >
   {(item) => <div class="card">{item.label}</div>}
 </VirtualList>
@@ -139,6 +172,9 @@ async function loadMore() {
   onEndReached={loadMore}
   endReachedThreshold={0.2}
   endReachedLoading={loading()}
+  aria-label="Infinite results"
+  aria-busy={loading()}
+  apiRef={(api) => (listApi = api)}
 >
   {(item) => <div class="row">{item.label}</div>}
 </VirtualList>

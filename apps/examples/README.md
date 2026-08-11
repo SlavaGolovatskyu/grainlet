@@ -73,11 +73,14 @@ Client-side History API routing (`grainlet/route`):
 `VirtualList` with real picsum photos:
 - Vertical / horizontal orientation
 - Per-row `item r` and `img loads` badges to catch remount thrash
+- Forwarded DOM ref/attributes and composed `onScroll`
+- `apiRef` controls for index navigation, visible range, and scroller focus
 
 ### 20-virtual-infinite.html
 Infinite scroll on `VirtualList`:
 - `onEndReached` + simulated paged API
 - Appends picsum photos until `hasMore` is false
+- Accessible feed attributes plus `apiRef` controls for top/latest navigation
 
 ### 21-forms-provider.html
 `grainlet/forms` FormProvider demo:

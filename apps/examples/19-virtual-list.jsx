@@ -63,6 +63,50 @@ const items = Array.from({ length: TOTAL }, (_, i) => createItem(i));
 
 function VirtualListDemo() {
   const [orientation, setOrientation] = createSignal('vertical');
+  const [getList] = createSignal({
+    api: null,
+    element: null,
+    scrolls: 0,
+    windowUpdates: 0,
+    lastRange: '',
+    setApi: null,
+    setElement: null,
+    onScroll: null,
+  });
+  const list = getList();
+
+  const reportRange = (countScroll = true) => {
+    const scrollCountEl = document.getElementById('scroll-count');
+    const windowCountEl = document.getElementById('window-count');
+    const rangeEl = document.getElementById('range-label');
+    if (!list.api || !scrollCountEl || !windowCountEl || !rangeEl) return;
+
+    if (countScroll) {
+      list.scrolls += 1;
+      scrollCountEl.textContent = String(list.scrolls);
+    }
+
+    const range = list.api.getVisibleRange();
+    const label =
+      range.end > range.start ? `[${range.start}…${range.end - 1}]` : '—';
+    rangeEl.textContent = label;
+    if (label !== list.lastRange) {
+      list.lastRange = label;
+      list.windowUpdates += 1;
+      windowCountEl.textContent = String(list.windowUpdates);
+    }
+  };
+
+  if (!list.setApi) {
+    list.setApi = (api) => {
+      list.api = api;
+      if (api) queueMicrotask(() => reportRange(false));
+    };
+    list.setElement = (element) => {
+      list.element = element;
+    };
+    list.onScroll = () => reportRange(true);
+  }
 
   return (
     <div class="demo">
@@ -89,6 +133,31 @@ function VirtualListDemo() {
         >
           Horizontal
         </button>
+        <button
+          type="button"
+          onClick={() =>
+            list.api?.scrollToIndex(Math.floor(TOTAL / 2), {
+              align: 'center',
+              behavior: 'smooth',
+            })
+          }
+        >
+          Jump to middle
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            list.api?.scrollToIndex(TOTAL - 1, {
+              align: 'end',
+              behavior: 'smooth',
+            })
+          }
+        >
+          Jump to end
+        </button>
+        <button type="button" onClick={() => list.element?.focus()}>
+          Focus scroller
+        </button>
       </div>
 
       <div class="stats">
@@ -112,6 +181,13 @@ function VirtualListDemo() {
           overscan={4}
           debounceTime={32}
           class="list list--v"
+          id="vertical-photo-list"
+          aria-label="Vertical photo list"
+          data-demo="virtual-list"
+          tabIndex={0}
+          ref={list.setElement}
+          apiRef={list.setApi}
+          onScroll={list.onScroll}
         >
           {(item) => <item.Item row={item} horizontal={false} />}
         </VirtualList>
@@ -127,6 +203,13 @@ function VirtualListDemo() {
           overscan={3}
           debounceTime={32}
           class="list list--h"
+          id="horizontal-photo-list"
+          aria-label="Horizontal photo list"
+          data-demo="virtual-list"
+          tabIndex={0}
+          ref={list.setElement}
+          apiRef={list.setApi}
+          onScroll={list.onScroll}
         >
           {(item) => <item.Item row={item} horizontal={true} />}
         </VirtualList>
@@ -136,44 +219,3 @@ function VirtualListDemo() {
 }
 
 render(VirtualListDemo, document.getElementById('app'));
-
-function attachScrollProbe() {
-  const scroller = document.querySelector('[data-grainlet-virtual-list]');
-  const scrollCountEl = document.getElementById('scroll-count');
-  const windowCountEl = document.getElementById('window-count');
-  const rangeEl = document.getElementById('range-label');
-  if (!scroller || !scrollCountEl || !windowCountEl || !rangeEl) return;
-  if (scroller.dataset.probe === '1') return;
-  scroller.dataset.probe = '1';
-
-  let scrolls = 0;
-  let windowUpdates = 0;
-  let lastRange = '';
-
-  const report = () => {
-    scrolls += 1;
-    scrollCountEl.textContent = String(scrolls);
-
-    const nodes = scroller.querySelectorAll('[data-index]');
-    if (!nodes.length) {
-      rangeEl.textContent = '—';
-      return;
-    }
-    const start = nodes[0].getAttribute('data-index');
-    const end = nodes[nodes.length - 1].getAttribute('data-index');
-    const label = `[${start}…${end}]`;
-    rangeEl.textContent = label;
-    if (label !== lastRange) {
-      lastRange = label;
-      windowUpdates += 1;
-      windowCountEl.textContent = String(windowUpdates);
-    }
-  };
-
-  scroller.addEventListener('scroll', report, { passive: true });
-  report();
-}
-
-queueMicrotask(attachScrollProbe);
-// Re-attach when switching orientation (Show remounts the list).
-document.addEventListener('click', () => queueMicrotask(attachScrollProbe));

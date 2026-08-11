@@ -439,6 +439,214 @@ async function testEndReachedRearmsAfterGrow() {
   root.remove();
 }
 
+async function testScrollerCustomizationAndRefs() {
+  const [items, setItems] = createSignal(
+    Array.from({ length: 100 }, (_, i) => ({ id: i }))
+  );
+  const domRefs = [];
+  const apiRefs = [];
+  let scrollCalls = 0;
+  let lowercaseScrollCalls = 0;
+
+  const App = createComponent(() =>
+    jsx(VirtualList, {
+      each: items(),
+      itemHeight: 20,
+      height: 100,
+      overscan: 1,
+      id: 'custom-virtual-list',
+      role: 'feed',
+      tabIndex: 3,
+      'aria-label': 'Custom results',
+      'data-testid': 'virtual-results',
+      'data-orientation': 'consumer-value',
+      'data-grainlet-virtual-list': 'consumer-value',
+      className: 'custom-scroller',
+      style: { backgroundColor: 'rgb(1, 2, 3)' },
+      ref: (el) => domRefs.push(el),
+      apiRef: (api) => apiRefs.push(api),
+      onScroll: () => {
+        scrollCalls += 1;
+      },
+      onscroll: () => {
+        lowercaseScrollCalls += 1;
+      },
+      children: (item) => jsx('span', null, String(item.id)),
+    })
+  );
+
+  const root = document.createElement('div');
+  document.body.appendChild(root);
+  render(App, root);
+  await flush();
+
+  const scroller = root.querySelector('[data-grainlet-virtual-list]');
+  if (!scroller) throw new Error('expected customizable scroller');
+  if (domRefs.length !== 1 || domRefs[0] !== scroller) {
+    throw new Error('forwarded ref should receive the outer scroller once');
+  }
+  if (apiRefs.length !== 1 || apiRefs[0]?.getElement() !== scroller) {
+    throw new Error('apiRef should receive an API for the outer scroller');
+  }
+  if (
+    scroller.id !== 'custom-virtual-list' ||
+    scroller.getAttribute('role') !== 'feed' ||
+    scroller.tabIndex !== 3 ||
+    scroller.getAttribute('aria-label') !== 'Custom results' ||
+    scroller.getAttribute('data-testid') !== 'virtual-results'
+  ) {
+    throw new Error('expected additional DOM attributes on outer scroller');
+  }
+  if (
+    scroller.getAttribute('data-orientation') !== 'vertical' ||
+    scroller.getAttribute('data-grainlet-virtual-list') !== ''
+  ) {
+    throw new Error('internal VirtualList markers must remain authoritative');
+  }
+  if (
+    scroller.className !== 'custom-scroller' ||
+    scroller.style.overflow !== 'auto' ||
+    scroller.style.height !== '100px' ||
+    scroller.style.backgroundColor !== 'rgb(1, 2, 3)'
+  ) {
+    throw new Error('expected existing class and merged style behavior');
+  }
+
+  scroller.scrollTop = 400;
+  scroller.dispatchEvent(new dom.window.Event('scroll', { bubbles: true }));
+  await flush();
+  if (
+    scrollCalls !== 1 ||
+    lowercaseScrollCalls !== 1 ||
+    indices(root)[0] < 15
+  ) {
+    throw new Error('consumer onScroll must compose with window updates');
+  }
+  if (domRefs.length !== 1 || apiRefs.length !== 1) {
+    throw new Error('stable refs should not be re-fired during list updates');
+  }
+
+  setItems([]);
+  await flush();
+  if (domRefs.at(-1) !== null || apiRefs.at(-1) !== null) {
+    throw new Error('DOM and API refs should clear when fallback replaces scroller');
+  }
+  root.remove();
+}
+
+async function testImperativeApiNavigation() {
+  const items = Array.from({ length: 100 }, (_, i) => ({ id: i }));
+  let api;
+  const App = createComponent(() =>
+    jsx(VirtualList, {
+      each: items,
+      itemHeight: 20,
+      height: 100,
+      overscan: 1,
+      apiRef: (value) => {
+        api = value;
+      },
+      children: (item) => jsx('span', null, String(item.id)),
+    })
+  );
+
+  const root = document.createElement('div');
+  document.body.appendChild(root);
+  render(App, root);
+  await flush();
+
+  const scroller = root.querySelector('[data-grainlet-virtual-list]');
+  if (!api || api.getElement() !== scroller) {
+    throw new Error('expected mounted imperative API');
+  }
+
+  if (!api.scrollToIndex(20, { align: 'center' })) {
+    throw new Error('scrollToIndex should succeed');
+  }
+  await flush();
+  if (scroller.scrollTop !== 360 || indices(root)[0] !== 17) {
+    throw new Error(
+      `centered index navigation failed (top=${scroller.scrollTop}, start=${indices(root)[0]})`
+    );
+  }
+
+  const range = api.getVisibleRange();
+  const rendered = indices(root);
+  if (
+    range.start !== rendered[0] ||
+    range.end !== rendered[rendered.length - 1] + 1
+  ) {
+    throw new Error('getVisibleRange should match the rendered window');
+  }
+
+  if (!api.scrollToItem(items[10], { align: 'end' })) {
+    throw new Error('scrollToItem should find a current item');
+  }
+  await flush();
+  if (scroller.scrollTop !== 120 || indices(root)[0] !== 5) {
+    throw new Error('end-aligned item navigation failed');
+  }
+  if (api.scrollToItem({ id: 10 }) !== false) {
+    throw new Error('scrollToItem should use current array identity');
+  }
+
+  if (!api.scrollToOffset(Number.MAX_SAFE_INTEGER)) {
+    throw new Error('scrollToOffset should succeed');
+  }
+  await flush();
+  if (scroller.scrollTop !== 1900 || indices(root).at(-1) !== 99) {
+    throw new Error('scrollToOffset should clamp to the maximum offset');
+  }
+
+  let smoothOptions;
+  scroller.scrollTo = (options) => {
+    smoothOptions = options;
+  };
+  api.scrollToIndex(-100, { behavior: 'smooth' });
+  if (
+    smoothOptions?.top !== 0 ||
+    smoothOptions?.behavior !== 'smooth'
+  ) {
+    throw new Error('smooth index navigation should use native scrollTo');
+  }
+  root.remove();
+}
+
+async function testHorizontalImperativeNavigation() {
+  const items = Array.from({ length: 30 }, (_, i) => ({ id: i }));
+  let api;
+  const App = createComponent(() =>
+    jsx(VirtualList, {
+      orientation: 'horizontal',
+      each: items,
+      itemWidth: 50,
+      width: 200,
+      height: 80,
+      overscan: 1,
+      apiRef: (value) => {
+        api = value;
+      },
+      children: (item) => jsx('span', null, String(item.id)),
+    })
+  );
+
+  const root = document.createElement('div');
+  document.body.appendChild(root);
+  render(App, root);
+  await flush();
+
+  const scroller = root.querySelector('[data-grainlet-virtual-list]');
+  api.scrollToIndex(10);
+  await flush();
+  if (scroller.scrollLeft !== 500 || scroller.scrollTop !== 0) {
+    throw new Error('horizontal API navigation should use scrollLeft');
+  }
+  if (indices(root)[0] < 8 || indices(root)[0] > 10) {
+    throw new Error('horizontal API navigation should update the window');
+  }
+  root.remove();
+}
+
 await testEmptyFallback();
 await testWindowedMountCount();
 await testScrollShiftsWindow();
@@ -448,5 +656,8 @@ await testEndReachedFiresOnceNearBottom();
 await testEndReachedBlockedWhileLoading();
 await testEndReachedRearmsAfterGrow();
 await testHorizontalScrollShiftsWindow();
+await testScrollerCustomizationAndRefs();
+await testImperativeApiNavigation();
+await testHorizontalImperativeNavigation();
 console.log('virtual-list tests passed');
 process.exit(0);

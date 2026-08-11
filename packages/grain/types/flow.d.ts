@@ -1,6 +1,6 @@
 import type { Accessor } from './signals.js';
 import type { Component } from './component.js';
-import type { JSX } from '../jsx-runtime.js';
+import type { JSX, Ref } from '../jsx-runtime.js';
 
 type Child = JSX.Element;
 type WhenValue = unknown;
@@ -22,7 +22,39 @@ export interface ForProps<T> {
 
 export declare function For<T>(props: ForProps<T>): Child;
 
+export interface VirtualListScrollOptions {
+  /** Item alignment within the viewport. Default `"start"`. */
+  align?: 'start' | 'center' | 'end' | 'auto';
+  /** Native scroll behavior. Default `"auto"`. */
+  behavior?: ScrollBehavior;
+}
+
+export interface VirtualListOffsetOptions {
+  /** Native scroll behavior. Default `"auto"`. */
+  behavior?: ScrollBehavior;
+}
+
+export type VirtualListScrollEvent = Event & {
+  readonly currentTarget: HTMLDivElement;
+  readonly target: HTMLDivElement;
+};
+
+export interface VirtualListApi<T> {
+  /** Scroll to an item index. Out-of-range indices are clamped. */
+  scrollToIndex: (index: number, options?: VirtualListScrollOptions) => boolean;
+  /** Scroll to the current array item by identity. Returns false when absent. */
+  scrollToItem: (item: T, options?: VirtualListScrollOptions) => boolean;
+  /** Scroll to a main-axis pixel offset. Out-of-range offsets are clamped. */
+  scrollToOffset: (offset: number, options?: VirtualListOffsetOptions) => boolean;
+  /** Read the current half-open rendered range. */
+  getVisibleRange: () => { start: number; end: number };
+  /** Read the outer scroller element after mount. */
+  getElement: () => HTMLDivElement | null;
+}
+
 export interface VirtualListProps<T> {
+  /** Additional outer `<div>` attributes and event handlers are forwarded. */
+  [key: string]: unknown;
   each: T[] | Accessor<T[] | undefined | null | false>;
   /** Scroll axis. Default `"vertical"`. */
   orientation?: 'vertical' | 'horizontal' | Accessor<'vertical' | 'horizontal'>;
@@ -55,6 +87,12 @@ export interface VirtualListProps<T> {
   class?: string;
   className?: string;
   style?: string | Record<string, string | number>;
+  /** Receives the outer scroller element and `null` when it unmounts. */
+  ref?: Ref<HTMLDivElement>;
+  /** Receives a stable imperative API and `null` when the scroller unmounts. */
+  apiRef?: (api: VirtualListApi<T> | null) => void;
+  onScroll?: (event: VirtualListScrollEvent) => void;
+  onscroll?: (event: VirtualListScrollEvent) => void;
   children: (item: T, index: number) => Child;
 }
 

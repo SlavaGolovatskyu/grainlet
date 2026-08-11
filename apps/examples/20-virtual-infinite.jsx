@@ -58,7 +58,23 @@ function InfiniteDemo() {
   const [pages, setPages] = createSignal(0);
   const [error, setError] = createSignal('');
   const [getBoot] = createSignal({ started: false });
+  const [getList] = createSignal({
+    api: null,
+    element: null,
+    setApi: null,
+    setElement: null,
+  });
   const boot = getBoot();
+  const list = getList();
+
+  if (!list.setApi) {
+    list.setApi = (api) => {
+      list.api = api;
+    };
+    list.setElement = (element) => {
+      list.element = element;
+    };
+  }
 
   const loadMore = async () => {
     if (loading() || !hasMore()) return;
@@ -101,6 +117,36 @@ function InfiniteDemo() {
         </Show>
       </div>
 
+      <div class="toolbar">
+        <button
+          type="button"
+          disabled={items().length === 0}
+          onClick={() =>
+            list.api?.scrollToIndex(0, {
+              align: 'start',
+              behavior: 'smooth',
+            })
+          }
+        >
+          Back to top
+        </button>
+        <button
+          type="button"
+          disabled={items().length === 0}
+          onClick={() =>
+            list.api?.scrollToItem(items().at(-1), {
+              align: 'end',
+              behavior: 'smooth',
+            })
+          }
+        >
+          Jump to latest
+        </button>
+        <button type="button" onClick={() => list.element?.focus()}>
+          Focus feed
+        </button>
+      </div>
+
       <Show when={error()}>
         <p class="error" role="alert">
           {error()}
@@ -117,6 +163,13 @@ function InfiniteDemo() {
         endReachedThreshold={0.25}
         endReachedLoading={loading()}
         class="list"
+        id="infinite-photo-feed"
+        aria-label="Infinite photo feed"
+        aria-busy={loading()}
+        data-demo="virtual-infinite"
+        tabIndex={0}
+        ref={list.setElement}
+        apiRef={list.setApi}
         fallback={<p class="empty">Loading first page…</p>}
       >
         {(item) => <Row item={item} />}

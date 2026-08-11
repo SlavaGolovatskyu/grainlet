@@ -20,7 +20,7 @@
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     }
     .lead { color: #444; line-height: 1.5; }
-    .toolbar { display: flex; gap: 8px; margin: 14px 0; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
     .toolbar button {
       padding: 8px 12px;
       font-size: 14px;
@@ -60,6 +60,7 @@
       border-radius: 8px;
       background: #f7f8fa;
     }
+    .list:focus { outline: 3px solid rgba(13, 110, 253, 0.3); }
     .card {
       display: flex;
       align-items: center;
