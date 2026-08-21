@@ -1,6 +1,6 @@
 {
   "name": "grainlet",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Fine-grained signals, JSX, routing, and SSR for the web",
   "type": "module",
   "license": "MIT",

@@ -64,23 +64,158 @@ export default defineConfig({
 | `grainlet/i18n` | Translations (`createI18n`, `I18nProvider`, `useTranslation`, …) — see [i18n/README.md](./i18n/README.md) |
 | `grainlet/query` | Async server state (`QueryClient`, `useQuery`, `useMutation`, …) — see [query/README.md](./query/README.md) |
 | `grainlet/utils` | Generic helpers (`stableHash`, `replaceEqualDeep`, `Subscribable`, …) — see [utils/README.md](./utils/README.md) |
-| `grainlet/store` | Fine-grained proxy stores (`createStore`, `produce`, `reconcile`) |
-| `grainlet/testing` | Component, hook, event, query, wait, and hydration test helpers |
-| `grainlet/devtools` | Development signal/owner and Query inspectors |
-| `grainlet/ssr` | Buffered/streaming SSR, SSG, head, and Web/Node adapters |
+| `grainlet/store` | Fine-grained proxy stores (`createStore`, `produce`, `reconcile`) — see [store/README.md](./store/README.md) |
+| `grainlet/testing` | Component, hook, event, wait, and hydration test helpers — see [testing/README.md](./testing/README.md) |
+| `grainlet/devtools` | Development signal/owner and Query inspectors — see [devtools/README.md](./devtools/README.md) |
+| `grainlet/ssr` | Buffered/streaming SSR, SSG, head, and Web/Node adapters — see [ssr/README.md](./ssr/README.md) |
 | `grainlet/jsx-runtime` | Automatic JSX runtime |
 | `grainlet-vite` | `grainJsx()` Vite plugin (separate package, `devDependency`) |
 | `grainlet-adapters` | Vercel and Cloudflare SSR deploy adapters (separate package) |
 
 > **Breaking:** Router and SSR APIs are no longer re-exported from `grainlet`. Import them from `grainlet/route` and `grainlet/ssr`. Forms, auth, auth-sdk, and i18n live under their respective `grainlet/*` entry points only.
 
-## Reactive scheduling and lifecycle
+## Signals and lifecycle
 
-`batch(fn)` coalesces signal writes. `onMount(fn)` runs once after the owned DOM
-is mounted and may return cleanup. `startTransition`, `useTransition`, and
-`createDeferred` schedule non-urgent updates without changing the default
-synchronous signal behavior. Large nested state can use `createStore` from
-`grainlet/store` for path-level tracking.
+```js
+import {
+  batch,
+  createDeferred,
+  createEffect,
+  createMemo,
+  createSignal,
+  isServer,
+  onCleanup,
+  onMount,
+  startTransition,
+  untrack,
+  useTransition,
+} from 'grainlet';
+```
+
+| API | Role |
+|-----|------|
+| `createSignal(initial)` | `[get, set]` — `get()` reads, `set(v)` or `set(prev => next)` writes |
+| `createMemo(fn)` | Cached accessor; recomputes when dependencies change |
+| `createEffect(fn)` | Run when dependencies change; may return cleanup. No-op on the server |
+| `onMount(fn)` | Once after this component's DOM is mounted; may return cleanup. No-op on the server |
+| `onCleanup(fn)` | Run when the current effect or component is disposed |
+| `batch(fn)` | Coalesce writes; flush effects once |
+| `untrack(fn)` | Read signals without subscribing |
+| `startTransition(fn)` | Schedule non-urgent updates; returns a `Promise` that settles after the flush |
+| `useTransition()` | `[pending, start]` — `pending()` is true while a transition is flushing |
+| `createDeferred(source, { timeoutMs? })` | Deferred copy of `source`, updated through `startTransition` |
+| `isServer()` | True during SSR |
+
+### onMount
+
+`onMount` runs after the owned DOM exists, so refs and measurements are valid. It
+does not re-run on later updates. Returning a function registers cleanup on
+unmount.
+
+```js
+function Chat() {
+  let root;
+
+  onMount(() => {
+    root.focus();
+    const id = setInterval(poll, 5000);
+    return () => clearInterval(id);
+  });
+
+  return <section ref={(el) => { root = el; }} tabIndex={-1}>…</section>;
+}
+```
+
+Use `onMount` for one-shot DOM setup (focus, observers, subscriptions). Use
+`createEffect` when work should re-run as signals change; it may also return
+cleanup, or register extra teardown with `onCleanup`.
+
+```js
+function Title(props) {
+  createEffect(() => {
+    document.title = props.title();
+  });
+
+  onCleanup(() => {
+    document.title = 'Grainlet';
+  });
+}
+```
+
+### batch and transitions
+
+Default writes flush effects synchronously. `batch` groups several sets into one
+flush. `startTransition` keeps that flush off the urgent path so typing and
+clicks stay snappy while a large list catches up.
+
+```js
+const [first, setFirst] = createSignal('');
+const [last, setLast] = createSignal('');
+const [filter, setFilter] = createSignal('');
+const [pending, start] = useTransition();
+const deferredFilter = createDeferred(filter);
+
+createEffect(() => {
+  first();
+  last();
+  // runs once per batch, not twice
+});
+
+batch(() => {
+  setFirst('Ada');
+  setLast('Lovelace');
+});
+
+function Search() {
+  return (
+    <>
+      <input
+        value={filter()}
+        onInput={(e) => setFilter(e.currentTarget.value)}
+      />
+      <button
+        type="button"
+        disabled={pending()}
+        onClick={() => start(() => setFilter(filter().trim()))}
+      >
+        Apply
+      </button>
+      <List filter={deferredFilter()} />
+    </>
+  );
+}
+```
+
+`isServer()` is true inside `renderToString*` / streaming SSR. Skip browser APIs
+there; `onMount` and `createEffect` already no-op on the server.
+
+## Store
+
+Nested objects and arrays — import from **`grainlet/store`**. Reads track
+individual paths; one setter call is batched.
+
+```js
+import { createStore, produce, reconcile } from 'grainlet/store';
+
+const [state, setState] = createStore({
+  user: { name: 'Ada', age: 1 },
+  todos: [{ title: 'Ship', done: false }],
+});
+
+setState('user', 'name', 'Grace');
+setState({ user: { name: 'Grace', age: 2 } });
+setState('todos', 0, produce((todo) => {
+  todo.done = true;
+}));
+setState('user', reconcile({ name: 'Grace', age: 3 }));
+
+createEffect(() => {
+  state.user.name; // does not re-run when age changes
+});
+```
+
+`produce` mutates a cloned draft. `reconcile` applies a new tree while preserving
+unchanged nodes. Full guide: **[store/README.md](./store/README.md)**.
 
 ## Control flow
 
@@ -506,6 +641,32 @@ render(
 
 Pass a namespace to `useTranslation`, then use keys relative to that file. Nested keys use dot paths (`segment.title.key`). Missing keys fall back to `fallbackLocale`, then the key string. For form validators, pass lazy messages: `required(() => t('validation.required'))`. Full guide: **[i18n/README.md](./i18n/README.md)**.
 
+## Query
+
+Async server state — import from **`grainlet/query`**. Query and mutation fields
+are Grainlet accessors (`data()`, `isPending()`), not plain properties.
+
+```js
+import { QueryClient, QueryClientProvider, useQuery } from 'grainlet/query';
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 30_000 } },
+});
+
+function Todo({ id }) {
+  const todo = useQuery({
+    queryKey: ['todo', id],
+    queryFn: ({ signal }) =>
+      fetch(`/api/todos/${id}`, { signal }).then((r) => r.json()),
+  });
+
+  return <h1>{todo.data()?.title}</h1>;
+}
+```
+
+Also: `useMutation`, `useInfiniteQuery`, `useQueries`, `HydrationBoundary`,
+`dehydrate` / `hydrate`. Full guide: **[query/README.md](./query/README.md)**.
+
 ## Routing
 
 History API router — no hash required:
@@ -560,6 +721,58 @@ navigate('/users/3');
 | `useParams()` | Signal of route params (`params().id`) |
 | `useLocation()` | Signal of `{ pathname, search, hash, state }` |
 
+Nested layouts, loaders, and actions are opt-in with `mode="nested"`:
+
+```js
+import {
+  Link,
+  Outlet,
+  Route,
+  Router,
+  queryLoader,
+  useNavigation,
+  useRouteLoaderData,
+} from 'grainlet/route';
+
+function Layout() {
+  const navigation = useNavigation();
+  return (
+    <main>
+      <Link href="/">Home</Link>
+      <p>{() => navigation().state}</p>
+      <Outlet />
+    </main>
+  );
+}
+
+function Project() {
+  const project = useRouteLoaderData();
+  return <h1>{() => project().name}</h1>;
+}
+
+<Router mode="nested" queryClient={queryClient} hydrationState={routeState}>
+  <Route element={Layout}>
+    <Route
+      path="projects/:id"
+      id="project"
+      component={Project}
+      loader={queryLoader(({ params }) => ({
+        queryKey: ['project', params.id],
+        queryFn: () =>
+          fetch(`/api/projects/${params.id}`).then((r) => r.json()),
+      }))}
+    />
+  </Route>
+</Router>
+```
+
+`queryLoader` shares the Router `queryClient` with `useQuery`. Also:
+`useSubmit`, `useMatches`, `useOutletContext`, `useRouteActionData`,
+`useRouteError`, `useSearchParams`, `redirect`. On the server,
+`prepareRoutes` / `renderRouteDocument` run loaders before HTML; call
+`hydrateRouterState(state, queryClient)` before client mount. Full guide:
+**[route/README.md](./route/README.md)**.
+
 ## SSR
 
 ```js
@@ -603,4 +816,46 @@ plus a `grainlet-prerender.json` manifest. Scaffold this pipeline with
 
 `configureHydration({ onMismatch, strict })` reports expected/actual nodes,
 JSX source, and a component stack. Hydration mismatches replace the subtree
-on the client unless strict mode throws.
+on the client unless strict mode throws. Full guide: **[ssr/README.md](./ssr/README.md)**.
+
+## Testing
+
+`grainlet/testing` uses the DOM from Vitest, Jest, JSDOM, happy-dom, or a
+browser. It does not bundle a DOM implementation.
+
+```js
+import {
+  cleanup,
+  fireEvent,
+  hydrate,
+  render,
+  renderHook,
+  screen,
+  waitFor,
+} from 'grainlet/testing';
+
+const view = render(Counter);
+fireEvent.click(screen.getByRole('button', { name: 'Increment' }));
+await waitFor(() => screen.getByText('1'));
+view.unmount();
+cleanup();
+```
+
+Pass `html` to `hydrate` to attach to existing markup without clearing the
+container. Full guide: **[testing/README.md](./testing/README.md)**.
+
+## Devtools
+
+Install the hook before application signals are created, then render the panel
+in development only:
+
+```js
+import { GrainletDevtools, installDevtoolsHook } from 'grainlet/devtools';
+
+installDevtoolsHook();
+
+<GrainletDevtools queryClient={queryClient} />
+```
+
+The inspector shows signal / effect / owner events and Query cache state. Full
+guide: **[devtools/README.md](./devtools/README.md)**.
