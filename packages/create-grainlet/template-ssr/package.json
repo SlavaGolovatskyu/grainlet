@@ -11,7 +11,7 @@
     "start": "NODE_ENV=production node server.js"
   },
   "dependencies": {
-    "grainlet": "^1.0.29",
+    "grainlet": "^1.1",
     "grainlet-adapters": "^1.0.0"
   },
   "devDependencies": {
