@@ -2,17 +2,23 @@ import {
   ensureHistoryListener,
   readWindowLocation,
   setLocationState,
+  setNavigationType,
 } from '../location/location.js';
 import { normalizePath } from '../match/match.js';
+import { getSSRContext } from '../../ssr/context.js';
 
 let activeBasename = '';
+let navigationInterceptor = null;
 
 export function setNavigateBasename(basename = '') {
-  activeBasename = normalizeBasename(basename);
+  const value = normalizeBasename(basename);
+  const context = getSSRContext();
+  if (context) context.basename = value;
+  else activeBasename = value;
 }
 
 export function getNavigateBasename() {
-  return activeBasename;
+  return getSSRContext()?.basename ?? activeBasename;
 }
 
 export function normalizeBasename(basename) {
@@ -24,8 +30,8 @@ export function normalizeBasename(basename) {
 }
 
 /** Strip basename from pathname for route matching. */
-export function stripBasename(pathname, basename = activeBasename) {
-  const base = normalizeBasename(basename);
+export function stripBasename(pathname, basename) {
+  const base = normalizeBasename(basename ?? getNavigateBasename());
   const path = normalizePath(pathname || '/');
   if (!base) return path;
   if (path === base) return '/';
@@ -36,8 +42,8 @@ export function stripBasename(pathname, basename = activeBasename) {
 }
 
 /** Prefix basename onto an app path for history URLs. */
-export function withBasename(to, basename = activeBasename) {
-  const base = normalizeBasename(basename);
+export function withBasename(to, basename) {
+  const base = normalizeBasename(basename ?? getNavigateBasename());
   const url = typeof to === 'string' ? to : '/';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
 
@@ -49,11 +55,23 @@ export function withBasename(to, basename = activeBasename) {
   return path + (abs.search || '') + (abs.hash || '');
 }
 
+export function setNavigationInterceptor(interceptor) {
+  navigationInterceptor =
+    typeof interceptor === 'function' ? interceptor : null;
+}
+
 /**
  * @param {string} to - app path (basename applied automatically)
  * @param {{ replace?: boolean, state?: unknown, basename?: string }} [options]
  */
 export function navigate(to, options = {}) {
+  if (navigationInterceptor && options.__commit !== true) {
+    return navigationInterceptor(to, options);
+  }
+  return commitNavigate(to, options);
+}
+
+export function commitNavigate(to, options = {}) {
   ensureHistoryListener();
   if (typeof window === 'undefined') return;
 
@@ -61,7 +79,7 @@ export function navigate(to, options = {}) {
     setNavigateBasename(options.basename);
   }
 
-  const full = withBasename(to, activeBasename);
+  const full = withBasename(to, getNavigateBasename());
   const url = new URL(full, window.location.origin);
   const next = {
     pathname: url.pathname || '/',
@@ -77,8 +95,10 @@ export function navigate(to, options = {}) {
     current.hash === next.hash;
 
   if (options.replace || same) {
+    setNavigationType('replace');
     window.history.replaceState(next.state, '', url.pathname + url.search + url.hash);
   } else {
+    setNavigationType('push');
     window.history.pushState(next.state, '', url.pathname + url.search + url.hash);
   }
 

@@ -32,6 +32,22 @@ export declare function hydrate(
   props?: Record<string, unknown>
 ): ComponentInstance;
 
+export interface HydrationMismatchDetail {
+  actual: string;
+  componentStack: string;
+  expected: string;
+  existingNode: Node | null;
+  path: string;
+  reason: string;
+  source?: { fileName?: string; lineNumber?: number; columnNumber?: number };
+  vdom: unknown;
+}
+
+export declare function configureHydration(options?: {
+  onMismatch?: (detail: HydrationMismatchDetail) => void;
+  strict?: boolean;
+}): () => void;
+
 /** Classic / low-level JSX factory. */
 export declare function jsx(
   type: string | Component,

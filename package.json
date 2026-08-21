@@ -8,6 +8,12 @@
     "apps/*"
   ],
   "scripts": {
+    "test": "npm test -w grainlet && npm test -w grainlet-vite && npm test -w create-grainlet && npm test -w grainlet-adapters",
+    "test:coverage": "c8 --check-coverage --lines 60 --functions 55 --branches 50 npm test -w grainlet",
+    "typecheck": "tsc --noEmit --module nodenext --moduleResolution nodenext --target es2022 --lib es2022,dom packages/grain/index.d.ts packages/grain/route.d.ts packages/grain/query.d.ts packages/grain/ssr.d.ts packages/grain/utils.d.ts packages/grain/store.d.ts packages/grain/testing.d.ts packages/grain/devtools.d.ts packages/vite/index.d.ts packages/adapters/index.d.ts packages/adapters/vercel.d.ts packages/adapters/cloudflare.d.ts packages/adapters/vite.d.ts",
+    "validate:packages": "node scripts/validate-packages.mjs && publint packages/grain && publint packages/vite && publint packages/adapters && attw --pack packages/grain --profile esm-only && attw --pack packages/adapters --profile esm-only",
+    "validate:versions": "node scripts/check-versions.mjs",
+    "ci": "npm run test && npm run typecheck && npm run validate:packages && npm run validate:versions && npm run build && npm run build -w ssr-demo",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
@@ -18,16 +24,21 @@
     "pack:lib": "npm pack -w grainlet",
     "pack:vite": "npm pack -w grainlet-vite",
     "pack:create": "npm pack -w create-grainlet",
-    "publish:libs": "node scripts/publish-libs.mjs"
+    "pack:adapters": "npm pack -w grainlet-adapters",
+    "publish:libs": "npm run ci && node scripts/publish-libs.mjs"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@babel/core": "^7.29.7",
     "@babel/plugin-syntax-jsx": "^7.29.7",
+    "c8": "^10.1.3",
     "grainlet-vite": "1.0.3",
+    "publint": "^0.3.24",
+    "typescript": "^7.0.2",
     "vite": "^5.0.0"
   },
   "dependencies": {
     "date-fns": "^4.1.0",
-    "grainlet": "1.0.22"
+    "grainlet": "*"
   }
 }

@@ -20,7 +20,7 @@ export function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-function resolvePropValue(value) {
+export function resolvePropValue(value) {
   if (isAccessor(value)) {
     try {
       return value();
@@ -31,7 +31,7 @@ function resolvePropValue(value) {
   return value;
 }
 
-function serializeAttrs(props) {
+export function serializeAttrs(props) {
   if (!props) return '';
   const parts = [];
 
@@ -70,7 +70,7 @@ function serializeAttrs(props) {
   return parts.length ? ` ${parts.join(' ')}` : '';
 }
 
-const VOID_TAGS = new Set([
+export const VOID_TAGS = new Set([
   'area',
   'base',
   'br',
@@ -106,15 +106,19 @@ export function serializeVnode(vdom, renderComponent) {
 
   if (isAccessor(vdom)) {
     const resolved = resolvePropValue(vdom);
+    let inner;
     if (isStructuredChild(resolved)) {
       if (Array.isArray(resolved)) {
-        return normalizeChildren(resolved)
+        inner = normalizeChildren(resolved)
           .map((child) => serializeVnode(child, renderComponent))
           .join('');
+      } else {
+        inner = serializeVnode(resolved, renderComponent);
       }
-      return serializeVnode(resolved, renderComponent);
+    } else {
+      inner = escapeHtml(toText(resolved));
     }
-    return escapeHtml(toText(resolved));
+    return wrapContents(inner, 'data-fg="dynamic"');
   }
 
   if (Array.isArray(vdom)) {

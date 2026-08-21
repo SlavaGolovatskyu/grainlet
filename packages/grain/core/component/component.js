@@ -7,6 +7,8 @@ import { componentSignalRegistry } from '../../signals/createSignal/createSignal
 import { createDom, patchDom, adoptDom, unmountDomTree } from '../dom/dom.js';
 import { createContentsHost } from '../dom/hosts.js';
 import { getErrorBoundary } from '../flow/context.js';
+import { componentStack } from '../dev/diagnostics.js';
+import { emitDevtools } from '../../devtools/hook.js';
 
 /** Ensure `type` is a createComponent factory (caches on `type.$$wrapped`). */
 export function asComponentFactory(type) {
@@ -52,6 +54,7 @@ const componentProto = {
     }
 
     const child = factory(childProps);
+    child._source = options.source;
     child.mount(host, { hydrate: !!options.hydrate });
     this._children.set(path, { instance: child, factory, host });
     return host;
@@ -63,6 +66,7 @@ const componentProto = {
     this._parentElement = parentElement;
     this._mounted = true;
     this._hydrate = !!options.hydrate;
+    emitDevtools('owner:mount', { owner: this, name: this._displayName });
 
     const previousComponent = currentComponent;
     setCurrentComponent(this);
@@ -105,13 +109,21 @@ const componentProto = {
 
         if (isFirstRender) {
           this._effectsInitialized = true;
+          const callbacks = this._mountCallbacks.splice(0);
+          for (const callback of callbacks) {
+            const cleanup = callback();
+            if (typeof cleanup === 'function') this._cleanups.push(cleanup);
+          }
         }
       } catch (err) {
         const boundary = getErrorBoundary();
         if (boundary) {
           // Defer so the current mount/patch stack can unwind before fallback remount.
-          voidMicrotask(() => boundary.catch(err));
+          queueMicrotask(() => boundary.catch(err));
           return;
+        }
+        if (err && typeof err === 'object' && !err.componentStack) {
+          err.componentStack = componentStack(this, this._source);
         }
         console.error('Uncaught render error:', err);
         throw err;
@@ -161,6 +173,7 @@ const componentProto = {
     this._mounted = false;
     this._element = null;
     this._renderEffect = null;
+    emitDevtools('owner:unmount', { owner: this, name: this._displayName });
   },
 };
 
@@ -180,10 +193,19 @@ export function createComponent(ComponentFn) {
     instance._renderEffect = null;
     instance._bindings = [];
     instance._hydrate = false;
+    instance._mountCallbacks = [];
+    instance._parentOwner = currentComponent;
+    instance._displayName =
+      Component.displayName || ComponentFn.displayName || ComponentFn.name;
+    emitDevtools('owner:create', {
+      owner: instance,
+      name: instance._displayName,
+    });
     return instance;
   }
 
   Component.$$component = true;
+  Component.displayName = ComponentFn.displayName || ComponentFn.name || 'Anonymous';
   Component._ssrFn = ComponentFn;
   return Component;
 }

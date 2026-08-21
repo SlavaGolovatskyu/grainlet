@@ -21,6 +21,9 @@
     "README.md"
   ],
   "sideEffects": false,
+  "scripts": {
+    "test": "node test/transform.test.mjs"
+  },
   "peerDependencies": {
     "@babel/core": "^7.23.0",
     "@babel/plugin-syntax-jsx": "^7.23.0",

@@ -9,11 +9,18 @@ npm install
 npm run dev
 ```
 
+Use `npx create-grainlet my-app --ssr` for the opt-in production starter with
+nested routing, streaming SSR, separate client/server Vite builds, and SSG
+primitives. That template also includes optional `src/vercel.js` /
+`src/cloudflare.js` entries and `grainlet-adapters` for cloud deploys. The
+default remains a client-rendered SPA.
+
 The generated project depends on:
 
 | Package | Role |
 |---------|------|
 | `grainlet` | Runtime (dependency) |
+| `grainlet-adapters` | Vercel/Cloudflare adapters (`--ssr` template only) |
 | `grainlet-vite` | JSX Vite plugin (devDependency) |
 | `vite` | Bundler (devDependency) |
 | `@babel/core`, `@babel/plugin-syntax-jsx` | Peers for the Vite plugin (devDependencies) |

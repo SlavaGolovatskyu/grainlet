@@ -1,6 +1,6 @@
 # grainlet
 
-Fine-grained reactive UI: **signals**, **JSX**, **forms**, **auth**, **i18n**, **History API routing**, and **SSR / hydrate**.
+Fine-grained reactive UI: **signals**, **JSX**, **queries**, **forms**, **auth**, **i18n**, **History API routing**, and **SSR / hydrate**.
 
 ## Install
 
@@ -62,11 +62,25 @@ export default defineConfig({
 | `grainlet/auth` | Session auth (`createAuth`, `AuthProvider`, `useSession`, …) — see [auth/README.md](./auth/README.md) |
 | `grainlet/auth-sdk` | Google, Apple, and GitHub OAuth integration — see [auth-sdk/README.md](./auth-sdk/README.md) |
 | `grainlet/i18n` | Translations (`createI18n`, `I18nProvider`, `useTranslation`, …) — see [i18n/README.md](./i18n/README.md) |
-| `grainlet/ssr` | Server render (`renderToString`, `renderToStringAsync`, …) |
+| `grainlet/query` | Async server state (`QueryClient`, `useQuery`, `useMutation`, …) — see [query/README.md](./query/README.md) |
+| `grainlet/utils` | Generic helpers (`stableHash`, `replaceEqualDeep`, `Subscribable`, …) — see [utils/README.md](./utils/README.md) |
+| `grainlet/store` | Fine-grained proxy stores (`createStore`, `produce`, `reconcile`) |
+| `grainlet/testing` | Component, hook, event, query, wait, and hydration test helpers |
+| `grainlet/devtools` | Development signal/owner and Query inspectors |
+| `grainlet/ssr` | Buffered/streaming SSR, SSG, head, and Web/Node adapters |
 | `grainlet/jsx-runtime` | Automatic JSX runtime |
 | `grainlet-vite` | `grainJsx()` Vite plugin (separate package, `devDependency`) |
+| `grainlet-adapters` | Vercel and Cloudflare SSR deploy adapters (separate package) |
 
 > **Breaking:** Router and SSR APIs are no longer re-exported from `grainlet`. Import them from `grainlet/route` and `grainlet/ssr`. Forms, auth, auth-sdk, and i18n live under their respective `grainlet/*` entry points only.
+
+## Reactive scheduling and lifecycle
+
+`batch(fn)` coalesces signal writes. `onMount(fn)` runs once after the owned DOM
+is mounted and may return cleanup. `startTransition`, `useTransition`, and
+`createDeferred` schedule non-urgent updates without changing the default
+synchronous signal behavior. Large nested state can use `createStore` from
+`grainlet/store` for path-level tracking.
 
 ## Control flow
 
@@ -572,3 +586,21 @@ const asyncBody = await renderToStringAsync(App);
 
 On the server, `createEffect` is a no-op; `createMemo` evaluates once for the HTML snapshot.
 `renderToStringAsync` keeps SSR mode on across passes until pending Suspense work settles.
+
+Production apps should use `createRequestHandler` (Web `Response`) or the Node
+`createNodeHandler` export. Streaming uses `renderToReadableStream` and
+`renderRouteToReadableStream`: the document shell and Suspense fallbacks flush
+first, then escaped boundary patches replace resolved regions out of order.
+Redirects from loaders happen before the shell. After shell emission, failures
+stay inside their boundary and surface through `onError`.
+
+Always create one `QueryClient` per request. `head` is escaped text; trusted
+markup belongs in `unsafeHead`. Prefer `Title`, `Meta`, `HeadLink`, `Canonical`,
+`JsonLd`, and `OpenGraph`. Pass a CSP `nonce` so state scripts and stream
+patches inherit it. `prerenderPaths` / `writePrerendered` generate static HTML
+plus a `grainlet-prerender.json` manifest. Scaffold this pipeline with
+`npx create-grainlet my-app --ssr`.
+
+`configureHydration({ onMismatch, strict })` reports expected/actual nodes,
+JSX source, and a component stack. Hydration mismatches replace the subtree
+on the client unless strict mode throws.

@@ -4,13 +4,19 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build:client": "vite build --config vite.client.config.js",
+    "build:server": "vite build --config vite.server.config.js",
+    "build": "npm run build:client && npm run build:server",
+    "start:prod": "node server-prod.js",
+    "test:browser": "node test/production-browser.test.mjs"
   },
   "dependencies": {
     "grainlet": "*"
   },
   "devDependencies": {
     "grainlet-vite": "*",
+    "playwright": "^1.62.1",
     "vite": "^5.0.0"
   }
 }

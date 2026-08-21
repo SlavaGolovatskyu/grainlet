@@ -1,6 +1,6 @@
 {
   "name": "create-grainlet",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Scaffold a Vite + Grainlet app",
   "type": "module",
   "license": "MIT",
@@ -10,10 +10,14 @@
   "files": [
     "bin",
     "template",
+    "template-ssr",
     "README.md"
   ],
   "engines": {
     "node": ">=18"
+  },
+  "scripts": {
+    "test": "node test/scaffold.test.mjs"
   },
   "keywords": [
     "grainlet",

@@ -1,9 +1,11 @@
 import { currentEffect, currentComponent } from '../reactive-context/reactive-context.js';
+import { scheduleEffect } from '../scheduler.js';
+import { emitDevtools } from '../../devtools/hook.js';
 
 // Track signal creation order per component to reuse signals across renders
 export const componentSignalRegistry = new WeakMap();
 
-function createSignalInstance(initialValue) {
+export function createSignalInstance(initialValue) {
   let value = initialValue;
   const subscribers = new Set();
 
@@ -27,13 +29,16 @@ function createSignalInstance(initialValue) {
       return;
     }
     value = next;
+    emitDevtools('signal:update', { signal: read, value });
     // Copy subscribers so re-entrant subscribe/unsubscribe during notify is safe
     [...subscribers].forEach((effect) => {
       if (!effect._disabled) {
-        effect();
+        scheduleEffect(effect);
       }
     });
   };
+
+  emitDevtools('signal:create', { signal: read, value });
 
   return [read, write];
 }

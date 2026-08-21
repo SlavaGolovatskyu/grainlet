@@ -1,4 +1,4 @@
-import type { JSX } from './jsx-runtime.js';
+import type { JSX } from '../jsx-runtime.js';
 import type { Accessor } from './signals.js';
 
 export type MaybePromise<T> = T | Promise<T>;

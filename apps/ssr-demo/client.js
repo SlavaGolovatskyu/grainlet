@@ -1,4 +1,10 @@
 import { hydrate } from 'grainlet';
-import { CounterApp } from './CounterApp.jsx';
+import { QueryClient } from 'grainlet/query';
+import { hydrateRouterState } from 'grainlet/route';
+import { RoutedApp } from './RoutedApp.jsx';
 
-hydrate(CounterApp, document.getElementById('app'));
+const stateNode = document.getElementById('__GRAINLET_STATE__');
+const state = stateNode ? JSON.parse(stateNode.textContent) : undefined;
+const queryClient = new QueryClient();
+hydrateRouterState(state, queryClient);
+hydrate(RoutedApp, document.getElementById('app'), { queryClient });

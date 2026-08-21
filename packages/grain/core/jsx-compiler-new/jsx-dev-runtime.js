@@ -27,7 +27,14 @@ export function jsxDEV(type, props, key, isStaticChildren, source, self) {
   const { children: _, ...restProps } = props || {};
   
   // Call the regular jsx function with children as separate arguments
-  return jsxFn(type, restProps, ...children);
+  const vnode = jsxFn(type, restProps, ...children);
+  if (vnode && typeof vnode === 'object') {
+    vnode.key = key;
+    vnode.__source = source;
+    vnode.__self = self;
+    vnode.__staticChildren = !!isStaticChildren;
+  }
+  return vnode;
 }
 
 // jsxsDEV for static children in dev mode (optimized version)

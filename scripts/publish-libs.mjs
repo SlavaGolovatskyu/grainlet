@@ -1,6 +1,6 @@
 /**
  * Publish Grainlet packages whose local version is not yet on npm.
- * Order: grainlet-vite → create-grainlet → grainlet
+ * Order: grainlet-vite → create-grainlet → grainlet → grainlet-adapters
  *
  *   npm run publish:libs
  *   npm run publish:libs -- --otp=123456
@@ -18,6 +18,7 @@ const PACKAGES = [
   { workspace: 'grainlet-vite', dir: 'packages/vite' },
   { workspace: 'create-grainlet', dir: 'packages/create-grainlet' },
   { workspace: 'grainlet', dir: 'packages/grain' },
+  { workspace: 'grainlet-adapters', dir: 'packages/adapters' },
 ];
 
 const args = process.argv.slice(2);

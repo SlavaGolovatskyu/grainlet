@@ -1,0 +1,69 @@
+{
+  "name": "grainlet-adapters",
+  "version": "1.0.0",
+  "description": "Deploy Grainlet SSR apps to Vercel, Cloudflare, and other Web-standard runtimes",
+  "type": "module",
+  "license": "MIT",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./vercel": {
+      "types": "./vercel.d.ts",
+      "default": "./vercel.js"
+    },
+    "./cloudflare": {
+      "types": "./cloudflare.d.ts",
+      "default": "./cloudflare.js"
+    },
+    "./vite": {
+      "types": "./vite.d.ts",
+      "default": "./vite.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "handler.js",
+    "assets.js",
+    "vercel.js",
+    "vercel.d.ts",
+    "cloudflare.js",
+    "cloudflare.d.ts",
+    "vite.js",
+    "vite.d.ts",
+    "output.js",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node test/handlers.test.mjs && node test/output.test.mjs"
+  },
+  "peerDependencies": {
+    "grainlet": "^1.0.29",
+    "vite": ">=5.0.0"
+  },
+  "devDependencies": {
+    "grainlet": "*"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
+  },
+  "keywords": [
+    "grainlet",
+    "ssr",
+    "vercel",
+    "cloudflare",
+    "adapters",
+    "deploy"
+  ]
+}

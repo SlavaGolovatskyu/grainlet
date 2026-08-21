@@ -27,26 +27,34 @@ const vite = await createViteServer({
 });
 
 async function renderPage(url) {
-  const { renderToString, renderToStringAsync, wrapHtmlDocument } =
+  const { renderToStringAsync, wrapHtmlDocument } =
     await vite.ssrLoadModule('grainlet/ssr');
   const path = new URL(url, 'http://localhost').pathname;
 
   const isAsync = path === '/ssr/async' || path === '/ssr/async/';
-  const mod = isAsync
-    ? await vite.ssrLoadModule('/apps/ssr-demo/AsyncApp.jsx')
-    : await vite.ssrLoadModule('/apps/ssr-demo/CounterApp.jsx');
-  const App = isAsync ? mod.AsyncApp : mod.CounterApp;
-  const clientScript = isAsync
-    ? '/apps/ssr-demo/async-client.js'
-    : '/apps/ssr-demo/client.js';
+  if (isAsync) {
+    const mod = await vite.ssrLoadModule('/apps/ssr-demo/AsyncApp.jsx');
+    const body = await renderToStringAsync(mod.AsyncApp, {}, { url });
+    return {
+      document: wrapHtmlDocument(body, {
+        title: 'SSR async demo',
+        scripts: ['/apps/ssr-demo/async-client.js'],
+      }),
+      headers: new Headers(),
+      status: 200,
+    };
+  }
 
-  const body = isAsync
-    ? await renderToStringAsync(App, {}, { url })
-    : renderToString(App, {}, { url });
-
-  return wrapHtmlDocument(body, {
-    title: isAsync ? 'SSR async demo' : 'SSR demo',
-    head: `<style>
+  const { QueryClient } = await vite.ssrLoadModule('grainlet/query');
+  const { renderRouteDocument } = await vite.ssrLoadModule('grainlet/route');
+  const mod = await vite.ssrLoadModule('/apps/ssr-demo/RoutedApp.jsx');
+  const queryClient = new QueryClient();
+  return renderRouteDocument(mod.RoutedApp, { queryClient }, {
+    queryClient,
+    routes: mod.routes,
+    url,
+    document: {
+    unsafeHead: `<style>
       body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }
       .count { font-size: 2rem; }
       .badge { display: inline-block; margin: 0.5rem 0; padding: 0.2rem 0.5rem; background: #eee; border-radius: 4px; }
@@ -54,7 +62,8 @@ async function renderPage(url) {
       .hint { color: #666; font-size: 0.9rem; }
       .fallback { color: #999; font-style: italic; }
     </style>`,
-    scripts: [clientScript],
+      scripts: ['/apps/ssr-demo/client.js'],
+    },
   });
 }
 
@@ -63,16 +72,31 @@ const server = http.createServer(async (req, res) => {
     const url = req.url || '/';
     const path = url.split('?')[0];
 
+    if (path === '/') {
+      res.statusCode = 302;
+      res.setHeader('Location', '/ssr');
+      res.end();
+      return;
+    }
+
     if (
       path === '/ssr' ||
       path === '/ssr/' ||
-      path === '/' ||
       path === '/ssr/async' ||
-      path === '/ssr/async/'
+      path === '/ssr/async/' ||
+      path.startsWith('/ssr/projects/') ||
+      path === '/ssr/old'
     ) {
-      const html = await renderPage(`http://localhost:${port}${url}`);
-      const transformed = await vite.transformIndexHtml(url, html);
-      res.statusCode = 200;
+      const result = await renderPage(`http://localhost:${port}${url}`);
+      if (result.redirect) {
+        res.statusCode = result.status;
+        res.setHeader('Location', result.redirect);
+        res.end();
+        return;
+      }
+      const transformed = await vite.transformIndexHtml(url, result.document);
+      res.statusCode = result.status;
+      result.headers?.forEach?.((value, name) => res.setHeader(name, value));
       res.setHeader('Content-Type', 'text/html');
       res.end(transformed);
       return;

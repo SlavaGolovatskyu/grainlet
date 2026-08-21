@@ -12,7 +12,7 @@
     "bench:collect": "node scripts/run.mjs"
   },
   "dependencies": {
-    "grainlet": "1.0.21",
+    "grainlet": "*",
     "preact": "10.26.5",
     "react": "19.0.0",
     "react-dom": "19.0.0",

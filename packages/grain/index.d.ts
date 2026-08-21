@@ -2,7 +2,12 @@ export {
   createSignal,
   createEffect,
   createMemo,
+  batch,
+  createDeferred,
+  onMount,
   onCleanup,
+  startTransition,
+  useTransition,
   untrack,
   isServer,
 } from './types/signals.js';
@@ -14,6 +19,7 @@ export {
   jsx,
   render,
   hydrate,
+  configureHydration,
 } from './types/component.js';
 
 export type {

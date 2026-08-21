@@ -1,0 +1,23 @@
+{
+  "all": false,
+  "check-coverage": true,
+  "lines": 60,
+  "functions": 55,
+  "branches": 50,
+  "include": [
+    "packages/grain/signals/**/*.js",
+    "packages/grain/store/**/*.js",
+    "packages/grain/ssr/**/*.js",
+    "packages/grain/route/**/*.js",
+    "packages/grain/testing/**/*.js",
+    "packages/grain/devtools/**/*.js",
+    "packages/grain/core/component/**/*.js",
+    "packages/grain/core/dev/**/*.js",
+    "packages/grain/core/dom/**/*.js"
+  ],
+  "exclude": [
+    "packages/grain/test/**",
+    "packages/grain/**/*.d.ts"
+  ],
+  "reporter": ["text", "text-summary"]
+}

@@ -1,5 +1,6 @@
 import { pushEffect, popEffect, currentComponent } from '../reactive-context/reactive-context.js';
 import { isServer } from '../env.js';
+import { emitDevtools } from '../../devtools/hook.js';
 
 function clearDeps(effect) {
   if (effect._deps) {
@@ -38,6 +39,7 @@ function createTrackedEffect(fn, { registerOnComponent } = {}) {
       return;
     }
 
+    emitDevtools('effect:run', { effect });
     clearDeps(effect);
     runCleanups(effect, cleanupFnRef);
 
@@ -61,6 +63,7 @@ function createTrackedEffect(fn, { registerOnComponent } = {}) {
   effect._cleanups = [];
   effect._deps = new Set();
   effect._disabled = false;
+  emitDevtools('effect:create', { effect });
 
   const dispose = () => {
     if (effect._disabled) {
@@ -69,6 +72,7 @@ function createTrackedEffect(fn, { registerOnComponent } = {}) {
     clearDeps(effect);
     runCleanups(effect, cleanupFnRef);
     effect._disabled = true;
+    emitDevtools('effect:dispose', { effect });
   };
 
   effect._dispose = dispose;

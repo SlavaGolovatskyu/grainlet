@@ -12,7 +12,11 @@ import { dirname, extname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const templateDir = resolve(__dirname, '../template');
+const templateName = process.argv.includes('--ssr')
+  || process.argv.some((argument) => argument === '--template=ssr')
+  ? 'template-ssr'
+  : 'template';
+const templateDir = resolve(__dirname, `../${templateName}`);
 
 const TEXT_EXTENSIONS = new Set([
   '.js',
@@ -36,6 +40,7 @@ function usage() {
 Scaffold a Vite + Grainlet app.
 
   npx create-grainlet my-app
+  npx create-grainlet my-app --ssr
   cd my-app
   npm install
   npm run dev

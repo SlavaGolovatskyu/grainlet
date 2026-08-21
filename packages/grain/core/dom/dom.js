@@ -11,6 +11,7 @@ import {
   mergeComponentProps,
 } from '../shared/vnode.js';
 import { createContentsHost } from './hosts.js';
+import { reportHydrationMismatch } from '../dev/diagnostics.js';
 import {
   isGrainTemplate,
   instantiateTemplate,
@@ -126,8 +127,8 @@ function unwrapAccessorValue(value) {
   return current;
 }
 
-function createDynamicChild(accessor, owner, path) {
-  const host = createContentsHost('data-fg', 'dynamic');
+function createDynamicChild(accessor, owner, path, existingHost) {
+  const host = existingHost ?? createContentsHost('data-fg', 'dynamic');
 
   disposeTextBinding(host);
   host[TEXT_DISPOSE] = createBindingEffect(() => {
@@ -444,7 +445,9 @@ export function createDom(vdom, owner, path = '0') {
   }
 
   if (isComponentType(type)) {
-    const host = owner._mountChild(path, type, componentProps(vdom));
+    const host = owner._mountChild(path, type, componentProps(vdom), {
+      source: vdom.__source,
+    });
     setNodeKey(host, vnodeKey(vdom));
     return host;
   }
@@ -585,11 +588,15 @@ export function patchDom(parent, oldDom, newVdom, owner, path = '0') {
         return entry.host;
       }
       clearChildRange(owner, path);
-      const host = owner._mountChild(path, newVdom.type, props);
+      const host = owner._mountChild(path, newVdom.type, props, {
+        source: newVdom.__source,
+      });
       return replaceNode(parent, oldDom, host);
     }
     clearChildRange(owner, path);
-    const host = owner._mountChild(path, newVdom.type, props);
+    const host = owner._mountChild(path, newVdom.type, props, {
+      source: newVdom.__source,
+    });
     return replaceNode(parent, oldDom, host);
   }
 
@@ -735,7 +742,7 @@ function isComponentHost(node) {
 }
 
 function hydrationMismatch(existingNode, vdom, owner, path, reason) {
-  console.warn(`[hydrate] mismatch at ${path}: ${reason}`, { existingNode, vdom });
+  reportHydrationMismatch({ existingNode, owner, path, reason, vdom });
   const fresh = createDom(vdom, owner, path);
   if (existingNode?.parentNode) {
     existingNode.parentNode.replaceChild(fresh, existingNode);
@@ -770,11 +777,7 @@ export function adoptDom(existingNode, vdom, owner, path = '0') {
     if (isDynamicHost(existingNode) || isFragmentHost(existingNode)) {
       disposeTextBinding(existingNode);
       existingNode.setAttribute('data-fg', 'dynamic');
-      const fresh = createDynamicChild(vdom, owner, path);
-      if (existingNode.parentNode) {
-        existingNode.parentNode.replaceChild(fresh, existingNode);
-      }
-      return fresh;
+      return createDynamicChild(vdom, owner, path, existingNode);
     }
     return hydrationMismatch(existingNode, vdom, owner, path, 'expected dynamic host for accessor');
   }
@@ -808,6 +811,7 @@ export function adoptDom(existingNode, vdom, owner, path = '0') {
     return owner._mountChild(path, vdom.type, componentProps(vdom), {
       hydrate: true,
       host: existingNode,
+      source: vdom.__source,
     });
   }
 

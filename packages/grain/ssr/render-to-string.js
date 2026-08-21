@@ -7,6 +7,7 @@ import { setLocationState } from '../route/location/location.js';
 import {
   runWithSSR,
   clearSSRPending,
+  getSSRContext,
   getSSRPending,
 } from './context.js';
 import { serializeVnode } from './serialize.js';
@@ -45,7 +46,7 @@ function getComponentFn(type) {
   return type;
 }
 
-function runComponent(type, props) {
+export function renderComponentForSSR(type, props) {
   const fn = getComponentFn(type);
   const owner = createSSROwner();
   const previous = currentComponent;
@@ -65,14 +66,17 @@ function runComponent(type, props) {
  * @param {{ url?: string }} [options]
  */
 export function renderToString(type, props = {}, options = {}) {
-  return runWithSSR(() => {
+  const render = () => {
     if (options.url) {
       setLocationState(parseUrl(options.url));
     }
 
-    const vnode = runComponent(type, props);
-    return serializeVnode(vnode, runComponent);
-  }, { url: options.url || null });
+    const vnode = renderComponentForSSR(type, props);
+    return serializeVnode(vnode, renderComponentForSSR);
+  };
+  return getSSRContext()
+    ? render()
+    : runWithSSR(render, { url: options.url || null });
 }
 
 /**
@@ -87,16 +91,16 @@ export function renderToString(type, props = {}, options = {}) {
 export async function renderToStringAsync(type, props = {}, options = {}) {
   const maxPasses = options.maxPasses ?? 25;
 
-  return runWithSSR(async () => {
+  const render = async () => {
     if (options.url) {
       setLocationState(parseUrl(options.url));
     }
 
     for (let pass = 0; pass < maxPasses; pass++) {
       clearSSRPending();
-      const vnode = runComponent(type, props);
+      const vnode = renderComponentForSSR(type, props);
       // Nested components (Suspense, lazy, resources) run during serialize.
-      const html = serializeVnode(vnode, runComponent);
+      const html = serializeVnode(vnode, renderComponentForSSR);
       const pending = getSSRPending();
       const list = pending ? [...pending] : [];
 
@@ -112,5 +116,8 @@ export async function renderToStringAsync(type, props = {}, options = {}) {
     throw new Error(
       `renderToStringAsync: exceeded maxPasses (${maxPasses}); still waiting on Suspense`
     );
-  }, { url: options.url || null });
+  };
+  return getSSRContext()
+    ? render()
+    : runWithSSR(render, { url: options.url || null });
 }

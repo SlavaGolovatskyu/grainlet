@@ -125,3 +125,68 @@ export function matchRoutes(routes, pathname) {
 
   return best;
 }
+
+function routeList(routes) {
+  if (!routes) return [];
+  return Array.isArray(routes) ? routes : [routes];
+}
+
+function collectBranches(routes, parentPath = '', parents = [], branches = []) {
+  routeList(routes).forEach((route, index) => {
+    if (!route) return;
+    const path = route.index
+      ? (parentPath || '/')
+      : route.path == null
+        ? (parentPath || '/')
+        : joinPaths(parentPath, route.path);
+    const id = route.id || `${parents.map((item) => item.index).join('-')}${parents.length ? '-' : ''}${index}`;
+    const segment = { id, index, path, route };
+    const branch = [...parents, segment];
+    const children = routeList(route.children);
+
+    if (children.length) {
+      collectBranches(children, path === '*' ? parentPath : path, branch, branches);
+    }
+
+    if (route.index || route.component || route.element || children.length === 0) {
+      branches.push({
+        matches: branch,
+        path,
+        scoreBoost: route.index ? 1000 : 0,
+      });
+    }
+  });
+  return branches;
+}
+
+/**
+ * Match a nested route branch, preserving every parent layout.
+ *
+ * @returns {Array<{
+ *   id: string,
+ *   path: string,
+ *   pathname: string,
+ *   params: Record<string, string>,
+ *   route: object,
+ *   handle?: unknown,
+ * }> | null}
+ */
+export function matchRouteBranch(routes, pathname) {
+  let best = null;
+  for (const branch of collectBranches(routes)) {
+    const result = matchPath(branch.path, pathname);
+    if (!result) continue;
+    const score = result.score + branch.scoreBoost + branch.matches.length;
+    if (!best || score > best.score) best = { branch, result, score };
+  }
+  if (!best) return null;
+  const normalizedPathname = normalizePath(pathname);
+  return best.branch.matches.map((segment) => ({
+    id: segment.id,
+    path: segment.path,
+    pathname: normalizedPathname,
+    params: { ...best.result.params },
+    route: segment.route,
+    handle: segment.route.handle,
+  }));
+}

@@ -1,6 +1,6 @@
 {
   "name": "grainlet",
-  "version": "1.0.29",
+  "version": "1.1",
   "description": "Fine-grained signals, JSX, routing, and SSR for the web",
   "type": "module",
   "license": "MIT",
@@ -13,6 +13,7 @@
     },
     "./route": {
       "types": "./route.d.ts",
+      "node": "./route/node-index.js",
       "default": "./route/index.js"
     },
     "./forms": {
@@ -31,8 +32,29 @@
       "types": "./i18n.d.ts",
       "default": "./i18n/index.js"
     },
+    "./query": {
+      "types": "./query.d.ts",
+      "default": "./query/index.js"
+    },
+    "./utils": {
+      "types": "./utils.d.ts",
+      "default": "./utils/index.js"
+    },
+    "./store": {
+      "types": "./store.d.ts",
+      "default": "./store/index.js"
+    },
+    "./testing": {
+      "types": "./testing.d.ts",
+      "default": "./testing/index.js"
+    },
+    "./devtools": {
+      "types": "./devtools.d.ts",
+      "default": "./devtools/index.js"
+    },
     "./ssr": {
       "types": "./ssr.d.ts",
+      "node": "./ssr/node-index.js",
       "default": "./ssr/index.js"
     },
     "./jsx-runtime": {
@@ -61,6 +83,11 @@
     "auth.d.ts",
     "auth-sdk.d.ts",
     "i18n.d.ts",
+    "query.d.ts",
+    "utils.d.ts",
+    "store.d.ts",
+    "testing.d.ts",
+    "devtools.d.ts",
     "ssr.d.ts",
     "jsx-runtime.d.ts",
     "jsx-dev-runtime.d.ts",
@@ -72,12 +99,20 @@
     "auth",
     "auth-sdk",
     "i18n",
+    "query",
+    "utils",
+    "store",
+    "testing",
+    "devtools",
     "ssr",
     "README.md"
   ],
   "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "test": "node test/keyed-unmount.test.mjs && node test/virtual-list.test.mjs && node test/render-async.test.mjs && node test/for-bench-repro.test.mjs && node test/template-for-smoke.test.mjs && node test/forms-paths.test.mjs && node test/forms-createForm.test.mjs && node test/forms-provider-smoke.test.mjs && node test/forms-yup.test.mjs && node test/forms-validators.test.mjs && node test/auth-core.test.mjs && node test/auth-provider.test.mjs && node test/auth-sdk-core.test.mjs && node test/auth-sdk-providers.test.mjs && node test/i18n-core.test.mjs && node test/i18n-provider.test.mjs"
+    "test": "node test/keyed-unmount.test.mjs && node test/virtual-list.test.mjs && node test/render-async.test.mjs && node test/streaming-ssr.test.mjs && node test/ssr-adapters-ssg.test.mjs && node test/hydration-diagnostics.test.mjs && node test/reactivity-runtime.test.mjs && node test/for-bench-repro.test.mjs && node test/template-for-smoke.test.mjs && node test/forms-paths.test.mjs && node test/forms-createForm.test.mjs && node test/forms-provider-smoke.test.mjs && node test/forms-yup.test.mjs && node test/forms-validators.test.mjs && node test/auth-core.test.mjs && node test/auth-provider.test.mjs && node test/auth-sdk-core.test.mjs && node test/auth-sdk-providers.test.mjs && node test/i18n-core.test.mjs && node test/i18n-provider.test.mjs && node test/utils.test.mjs && node test/query-core.test.mjs && node test/query-hooks.test.mjs && node test/query-infinite-ssr.test.mjs && node test/router-ssr-integration.test.mjs"
   },
   "peerDependencies": {
     "yup": "^1.0.0"

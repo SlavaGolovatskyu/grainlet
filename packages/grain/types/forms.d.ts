@@ -1,4 +1,4 @@
-import type { JSX } from './jsx-runtime.js';
+import type { JSX } from '../jsx-runtime.js';
 
 export type MessageInput = string | (() => string);
 

@@ -1,9 +1,17 @@
 import { setServerMode, isServer } from '../signals/env.js';
 
 let ssrContext = null;
+const AsyncLocalStorage = globalThis.process
+  ?.getBuiltinModule?.('node:async_hooks')
+  ?.AsyncLocalStorage;
+let requestStorage = AsyncLocalStorage ? new AsyncLocalStorage() : null;
+
+export function setSSRContextStorage(storage) {
+  if (storage?.getStore && storage?.run) requestStorage = storage;
+}
 
 export function getSSRContext() {
-  return ssrContext;
+  return requestStorage?.getStore() ?? ssrContext;
 }
 
 export { isServer };
@@ -13,23 +21,25 @@ export { isServer };
  * Used by renderToStringAsync to await before the next pass.
  */
 export function getSSRPending() {
-  return ssrContext?.pending ?? null;
+  return getSSRContext()?.pending ?? null;
 }
 
 export function clearSSRPending() {
-  if (ssrContext?.pending) {
-    ssrContext.pending.clear();
+  const context = getSSRContext();
+  if (context?.pending) {
+    context.pending.clear();
   }
 }
 
 /** Register a thenable for renderToStringAsync. No-op off the server. */
 export function trackSSRThenables(thenable) {
-  if (!ssrContext || thenable == null) return;
+  const context = getSSRContext();
+  if (!context || thenable == null) return;
   if (typeof thenable.then !== 'function') return;
-  if (!ssrContext.pending) {
-    ssrContext.pending = new Set();
+  if (!context.pending) {
+    context.pending = new Set();
   }
-  ssrContext.pending.add(thenable);
+  context.pending.add(thenable);
 }
 
 /**
@@ -37,11 +47,27 @@ export function trackSSRThenables(thenable) {
  * @returns {Map<string, { status: string, value?: unknown, error?: unknown }> | null}
  */
 export function getSSRResourceCache() {
-  if (!ssrContext) return null;
-  if (!ssrContext.resourceCache) {
-    ssrContext.resourceCache = new Map();
+  const context = getSSRContext();
+  if (!context) return null;
+  if (!context.resourceCache) {
+    context.resourceCache = new Map();
   }
-  return ssrContext.resourceCache;
+  return context.resourceCache;
+}
+
+export function createSSRContext(context = {}) {
+  return {
+    ...context,
+    head: context.head instanceof Map ? context.head : new Map(),
+    pending: new Set(),
+    queryState: context.queryState ?? null,
+    resourceCache:
+      context.resourceCache instanceof Map
+        ? context.resourceCache
+        : new Map(),
+    routeState: context.routeState ?? null,
+    url: context.url ?? null,
+  };
 }
 
 /**
@@ -49,15 +75,24 @@ export function getSSRResourceCache() {
  * Supports async `fn` — keeps server mode on until the promise settles.
  */
 export function runWithSSR(fn, context = {}) {
+  const nextContext = createSSRContext(context);
+  if (requestStorage) {
+    setServerMode(true);
+    try {
+      const result = requestStorage.run(nextContext, fn);
+      if (result != null && typeof result.then === 'function') {
+        return Promise.resolve(result).finally(() => setServerMode(false));
+      }
+      setServerMode(false);
+      return result;
+    } catch (error) {
+      setServerMode(false);
+      throw error;
+    }
+  }
+
   const previous = ssrContext;
-  ssrContext = {
-    ...context,
-    pending: new Set(),
-    resourceCache:
-      context.resourceCache instanceof Map
-        ? context.resourceCache
-        : new Map(),
-  };
+  ssrContext = nextContext;
   setServerMode(true);
 
   const cleanup = () => {

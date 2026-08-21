@@ -80,6 +80,8 @@ export function Suspense(props) {
   });
 }
 
+Suspense.$$streamSuspense = true;
+
 function SuspenseBoundary(props) {
   pushSuspenseContext(props.ctx);
   onCleanup(() => popSuspenseContext());

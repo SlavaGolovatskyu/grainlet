@@ -1,0 +1,23 @@
+{
+  "name": "__PROJECT_NAME__",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "build:client": "vite build --config vite.client.config.js",
+    "build:server": "vite build --config vite.server.config.js",
+    "build": "npm run build:client && npm run build:server",
+    "start": "NODE_ENV=production node server.js"
+  },
+  "dependencies": {
+    "grainlet": "^1.0.29",
+    "grainlet-adapters": "^1.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@babel/plugin-syntax-jsx": "^7.23.0",
+    "grainlet-vite": "^1.0.3",
+    "vite": "^5.0.0"
+  }
+}

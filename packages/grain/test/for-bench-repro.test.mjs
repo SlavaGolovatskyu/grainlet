@@ -173,7 +173,7 @@ try {
       `swap-many order wrong: [0]=${manyIds[0]} [99]=${manyIds[99]} [999]=${manyIds[999]}`
     );
   }
-  if (manyMs > 40) {
+  if (!process.env.GRAINLET_COVERAGE && manyMs > 40) {
     throw new Error(`swap-many too slow: ${manyMs.toFixed(1)}ms`);
   }
   console.log('swap-many', manyMs.toFixed(2), 'ms');

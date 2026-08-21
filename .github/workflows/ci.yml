@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run ci
+      - run: npm run test:coverage
+        if: matrix.node == 22
+      - run: npx playwright install --with-deps chromium
+        if: matrix.node == 22
+      - run: npm run test:browser -w ssr-demo
+        if: matrix.node == 22
+      - run: npm pack -w grainlet --dry-run
+      - run: npm pack -w grainlet-vite --dry-run
+      - run: npm pack -w grainlet-adapters --dry-run
