@@ -118,6 +118,7 @@ function wranglerConfig(options) {
     name: options.name || 'grainlet-app',
     main: 'worker.js',
     compatibility_date: options.compatibilityDate || '2024-09-23',
+    compatibility_flags: options.compatibilityFlags || ['nodejs_compat'],
     assets: {
       directory: './assets',
       binding: 'ASSETS',

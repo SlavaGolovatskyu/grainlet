@@ -1,13 +1,35 @@
 import { setServerMode, isServer } from '../signals/env.js';
 
 let ssrContext = null;
-const AsyncLocalStorage = globalThis.process
-  ?.getBuiltinModule?.('node:async_hooks')
-  ?.AsyncLocalStorage;
-let requestStorage = AsyncLocalStorage ? new AsyncLocalStorage() : null;
+let requestStorage = null;
+
+function detectAsyncLocalStorage() {
+  const fromProcess = globalThis.process
+    ?.getBuiltinModule?.('node:async_hooks')
+    ?.AsyncLocalStorage;
+  if (typeof fromProcess === 'function') return fromProcess;
+  if (typeof globalThis.AsyncLocalStorage === 'function') {
+    return globalThis.AsyncLocalStorage;
+  }
+  return null;
+}
+
+const DetectedAsyncLocalStorage = detectAsyncLocalStorage();
+if (DetectedAsyncLocalStorage) {
+  requestStorage = new DetectedAsyncLocalStorage();
+}
 
 export function setSSRContextStorage(storage) {
   if (storage?.getStore && storage?.run) requestStorage = storage;
+}
+
+export function ensureSSRContextStorage() {
+  if (requestStorage) return requestStorage;
+  const ALS = detectAsyncLocalStorage();
+  if (typeof ALS === 'function') {
+    requestStorage = new ALS();
+  }
+  return requestStorage;
 }
 
 export function getSSRContext() {

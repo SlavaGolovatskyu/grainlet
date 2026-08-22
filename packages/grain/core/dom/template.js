@@ -1,4 +1,11 @@
 import { createBindingEffect } from '../../signals/createEffect/createEffect.js';
+import {
+  eventName,
+  isSafeAttributeName,
+  isUrlAttribute,
+  sanitizeStyleValue,
+  sanitizeUrl,
+} from '../shared/security.js';
 import { BOOLEAN_ATTRS, toText } from '../shared/vnode.js';
 import {
   TEXT_DISPOSE,
@@ -50,14 +57,6 @@ function disposeProp(el, key) {
   map.delete(key);
 }
 
-function eventName(key) {
-  if (key === 'onClick' || key === 'onclick') return 'click';
-  if (key.startsWith('on') && key.length > 2) {
-    return key.slice(2).toLowerCase();
-  }
-  return null;
-}
-
 function setAttr(el, key, value) {
   if (key === 'className' || key === 'class') {
     const next = value == null ? '' : String(value);
@@ -70,8 +69,18 @@ function setAttr(el, key, value) {
     }
     return;
   }
-  if (key === 'style' && value && typeof value === 'object') {
-    Object.assign(el.style, value);
+  if (key === 'style') {
+    if (typeof value === 'string') {
+      el.style.cssText = sanitizeStyleValue(value);
+      return;
+    }
+    if (value && typeof value === 'object') {
+      const safe = {};
+      for (const [name, item] of Object.entries(value)) {
+        safe[name] = sanitizeStyleValue(item);
+      }
+      Object.assign(el.style, safe);
+    }
     return;
   }
   if (BOOLEAN_ATTRS.has(key)) {
@@ -81,6 +90,21 @@ function setAttr(el, key, value) {
     else el.removeAttribute(key);
     return;
   }
+  if (key.toLowerCase() === 'srcdoc' || !isSafeAttributeName(key)) {
+    el.removeAttribute(key);
+    return;
+  }
+
+  if (isUrlAttribute(key)) {
+    const safe = sanitizeUrl(value, key, el.tagName);
+    if (safe == null) {
+      el.removeAttribute(key);
+      return;
+    }
+    el.setAttribute(key, String(safe));
+    return;
+  }
+
   if (value == null || value === false) {
     el.removeAttribute(key);
   } else {

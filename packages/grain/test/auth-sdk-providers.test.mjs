@@ -21,9 +21,11 @@ globalThis.google = {
   },
 };
 
+let appleInit;
 globalThis.AppleID = {
   auth: {
     init(options) {
+      appleInit = options;
       assert.equal(options.clientId, 'apple-client');
       assert.equal(options.usePopup, true);
     },
@@ -87,6 +89,11 @@ assert.equal((await auth.signIn('google')).user.id, 'google-user');
 assert.deepEqual(posts[0].body, { idToken: 'google-id-token' });
 
 assert.equal((await auth.signIn('apple')).user.id, 'apple-user');
+assert.equal(appleInit.state.length, 48);
+assert.equal(appleInit.nonce.length, 48);
+assert.match(appleInit.state, /^[0-9a-f]+$/);
+assert.match(appleInit.nonce, /^[0-9a-f]+$/);
+assert.notEqual(appleInit.state, appleInit.nonce);
 assert.deepEqual(posts[1].body, {
   idToken: 'apple-id-token',
   user: { name: { firstName: 'Grain' } },

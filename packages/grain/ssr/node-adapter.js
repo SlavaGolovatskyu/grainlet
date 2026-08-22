@@ -1,5 +1,15 @@
 import { once } from 'node:events';
+import {
+  resolveNodeRequestOrigin,
+  sanitizeRequestPath,
+} from '../core/shared/security.js';
 import { createRequestHandler } from './handler.js';
+
+export {
+  resolveNodeRequestOrigin,
+  sanitizeRequestHost,
+  sanitizeRequestPath,
+} from '../core/shared/security.js';
 
 async function readBody(request) {
   const chunks = [];
@@ -14,8 +24,7 @@ export function createNodeHandler(options) {
     incoming.once('aborted', () =>
       abortController.abort(new DOMException('Client disconnected', 'AbortError'))
     );
-    const protocol = incoming.socket?.encrypted ? 'https' : 'http';
-    const host = incoming.headers.host || 'localhost';
+    const origin = resolveNodeRequestOrigin(incoming, options);
     const method = incoming.method || 'GET';
     const headers = new Headers();
     for (const [name, value] of Object.entries(incoming.headers)) {
@@ -26,7 +35,7 @@ export function createNodeHandler(options) {
       }
     }
     const request = new Request(
-      new URL(incoming.url || '/', `${protocol}://${host}`),
+      new URL(sanitizeRequestPath(incoming.url), `${origin}/`),
       {
         body: method === 'GET' || method === 'HEAD'
           ? undefined

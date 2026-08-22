@@ -1,5 +1,14 @@
 import { popSuspenseContext } from '../core/flow/context.js';
 import {
+  isJsonScriptType,
+  isSafeAttributeName,
+  isSafeTagName,
+  isScriptTag,
+  isUrlAttribute,
+  sanitizeStyleValue,
+  sanitizeUrl,
+} from '../core/shared/security.js';
+import {
   BOOLEAN_ATTRS,
   isFragmentType,
   isComponentType,
@@ -31,18 +40,47 @@ export function resolvePropValue(value) {
   return value;
 }
 
-export function serializeAttrs(props) {
+export function scriptTextFromChildren(children) {
+  const list = normalizeChildren(children);
+  if (list.length === 0) return '';
+  if (list.length === 1 && !isStructuredChild(list[0]) && !isAccessor(list[0])) {
+    return list[0];
+  }
+  return list
+    .map((child) => (isAccessor(child) ? resolvePropValue(child) : child))
+    .filter((child) => child != null && !isStructuredChild(child))
+    .map((child) => toText(child))
+    .join('');
+}
+
+export function escapeScriptData(value) {
+  if (value != null && typeof value === 'object') {
+    return escapeScriptData(JSON.stringify(value));
+  }
+  return String(value ?? '')
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+export function serializeAttrs(props, tagName) {
   if (!props) return '';
   const parts = [];
 
   for (const key of Object.keys(props)) {
-    if (key === 'children' || key === 'key' || key === 'ref') continue;
+    if (key === 'children' || key === 'key' || key === 'ref' || key === 'json') {
+      continue;
+    }
     if (isEventProp(key)) continue;
 
     let attrName = key;
     if (key === 'className') attrName = 'class';
+    if (attrName.toLowerCase() === 'srcdoc') continue;
+    if (!isSafeAttributeName(attrName)) continue;
 
-    const raw = resolvePropValue(props[key]);
+    let raw = resolvePropValue(props[key]);
 
     if (BOOLEAN_ATTRS.has(key) || BOOLEAN_ATTRS.has(attrName)) {
       if (raw) parts.push(attrName);
@@ -52,22 +90,45 @@ export function serializeAttrs(props) {
     if (raw == null || raw === false) continue;
 
     if (key === 'style' || attrName === 'style') {
-      const css =
+      const css = sanitizeStyleValue(
         typeof raw === 'string'
           ? raw
           : raw && typeof raw === 'object'
             ? Object.entries(raw)
                 .map(([k, v]) => `${k}:${v}`)
                 .join(';')
-            : '';
+            : ''
+      );
       if (css) parts.push(`style="${escapeHtml(css)}"`);
       continue;
+    }
+
+    if (isUrlAttribute(attrName)) {
+      raw = sanitizeUrl(raw, attrName, tagName);
+      if (raw == null) continue;
     }
 
     parts.push(`${attrName}="${escapeHtml(raw === true ? '' : raw)}"`);
   }
 
   return parts.length ? ` ${parts.join(' ')}` : '';
+}
+
+export function serializeHostElement(tag, props, key, inner) {
+  if (!isSafeTagName(tag)) return '';
+  const keyAttr = key != null ? ` data-key="${escapeHtml(key)}"` : '';
+  const attrs = serializeAttrs(props, tag);
+  if (VOID_TAGS.has(tag)) {
+    return `<${tag}${attrs}${keyAttr} />`;
+  }
+  if (isScriptTag(tag)) {
+    const scriptType = resolvePropValue(props?.type);
+    if (isJsonScriptType(scriptType)) {
+      return `<${tag}${attrs}${keyAttr}>${escapeScriptData(inner)}</${tag}>`;
+    }
+    return `<${tag}${attrs}${keyAttr}></${tag}>`;
+  }
+  return `<${tag}${attrs}${keyAttr}>${inner}</${tag}>`;
 }
 
 export const VOID_TAGS = new Set([
@@ -153,16 +214,10 @@ export function serializeVnode(vdom, renderComponent) {
   }
 
   const tag = String(type);
-  const key = vdom.key ?? props?.key;
-  const keyAttr = key != null ? ` data-key="${escapeHtml(key)}"` : '';
-  const attrs = serializeAttrs(props);
-  if (VOID_TAGS.has(tag)) {
-    return `<${tag}${attrs}${keyAttr} />`;
-  }
-
-  const inner = normalizeChildren(children)
-    .map((child) => serializeVnode(child, renderComponent))
-    .join('');
-
-  return `<${tag}${attrs}${keyAttr}>${inner}</${tag}>`;
+  const inner = isScriptTag(tag)
+    ? scriptTextFromChildren(children)
+    : normalizeChildren(children)
+        .map((child) => serializeVnode(child, renderComponent))
+        .join('');
+  return serializeHostElement(tag, props, vdom.key ?? props?.key, inner);
 }

@@ -4,7 +4,14 @@ import {
   currentEffect,
 } from '../signals/reactive-context/reactive-context.js';
 import { getSSRContext, isServer } from './context.js';
-import { escapeHtml } from './serialize.js';
+import {
+  isSafeAttributeName,
+  isSafeTagName,
+  isUrlAttribute,
+  sanitizeUrl,
+} from '../core/shared/security.js';
+import { isEventProp } from '../core/shared/vnode.js';
+import { escapeHtml, serializeAttrs } from './serialize.js';
 
 function read(value) {
   return typeof value === 'function' ? value() : value;
@@ -30,6 +37,7 @@ function safeJson(value) {
 
 function upsertClientEntry(entry, scope = 'component') {
   const { key, props, tag } = entry;
+  if (!isSafeTagName(tag)) return null;
   let node = [...document.head.querySelectorAll('[data-grainlet-head]')]
     .find((candidate) =>
       candidate.getAttribute('data-grainlet-head') === key
@@ -69,13 +77,22 @@ function upsertClientEntry(entry, scope = 'component') {
   }
   for (const [name, value] of Object.entries(props)) {
     if (name === 'children' || name === 'key' || name === 'json') continue;
-    const resolved = read(value);
+    if (isEventProp(name)) continue;
+    const attrName = name === 'className' ? 'class' : name;
+    if (attrName.toLowerCase() === 'srcdoc' || !isSafeAttributeName(attrName)) {
+      continue;
+    }
+    let resolved = read(value);
     if (resolved == null || resolved === false) continue;
-    node.setAttribute(name === 'className' ? 'class' : name, String(resolved));
+    if (isUrlAttribute(attrName)) {
+      resolved = sanitizeUrl(resolved, attrName, tag);
+      if (resolved == null) continue;
+    }
+    node.setAttribute(attrName, String(resolved));
   }
   if (tag === 'title') node.textContent = String(read(props.children) ?? '');
-  if (tag === 'script' && props.json !== undefined) {
-    node.textContent = safeJson(read(props.json));
+  if (tag === 'script') {
+    node.textContent = props.json !== undefined ? safeJson(read(props.json)) : '';
   }
   return node;
 }
@@ -92,7 +109,7 @@ export function registerHeadEntry(tag, props = {}) {
   const node = upsertClientEntry(entry);
   if (currentComponent || currentEffect) {
     onCleanup(() => {
-      if (!isServer() && node.isConnected) node.remove();
+      if (!isServer() && node?.isConnected) node.remove();
     });
   }
   return key;
@@ -180,28 +197,17 @@ export function applyRouteHeadEntries(metadata) {
 export function renderHead(context = getSSRContext()) {
   if (!context?.head) return '';
   return [...context.head.values()].map(({ tag, props }) => {
+    if (!isSafeTagName(tag)) return '';
     if (tag === 'title') {
       return `<title>${escapeHtml(read(props.children) ?? '')}</title>`;
     }
-    if (tag === 'script' && props.json !== undefined) {
-      const attributes = Object.entries(props)
-        .filter(([name, value]) =>
-          !['children', 'json', 'key'].includes(name) && read(value) != null
-        )
-        .map(([name, value]) =>
-          `${name}="${escapeHtml(read(value))}"`
-        )
-        .join(' ');
-      return `<script${attributes ? ` ${attributes}` : ''}>${safeJson(read(props.json))}</script>`;
+    const attrs = serializeAttrs(props, tag);
+    if (tag === 'script') {
+      const body = props.json !== undefined
+        ? safeJson(read(props.json))
+        : '';
+      return `<script${attrs}>${body}</script>`;
     }
-    const attributes = Object.entries(props)
-      .filter(([name, value]) =>
-        name !== 'children' && name !== 'key' && read(value) != null
-      )
-      .map(([name, value]) =>
-        `${name === 'className' ? 'class' : name}="${escapeHtml(read(value))}"`
-      )
-      .join(' ');
-    return `<${tag}${attributes ? ` ${attributes}` : ''}>`;
+    return `<${tag}${attrs}>`;
   }).join('\n');
 }

@@ -12,8 +12,9 @@
 const HOLE = ' ';
 
 function isEventAttrName(name) {
-  if (typeof name !== 'string') return false;
-  return name === 'onclick' || name === 'onClick' || /^on[A-Z]/.test(name);
+  if (typeof name !== 'string' || name.length < 3) return false;
+  if (name.toLowerCase() === 'once') return false;
+  return /^on[a-z]/i.test(name);
 }
 
 function getTagName(openingEl, t) {

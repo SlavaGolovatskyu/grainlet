@@ -73,6 +73,7 @@ async function fixture() {
   assert.equal(wrangler.main, 'worker.js');
   assert.equal(wrangler.assets.binding, 'ASSETS');
   assert.equal(wrangler.name, 'demo-worker');
+  assert.deepEqual(wrangler.compatibility_flags, ['nodejs_compat']);
   assert.match(
     await readFile(join(result.outDir, 'assets/client.js'), 'utf8'),
     /client/

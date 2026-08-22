@@ -29,6 +29,7 @@
     "index.js",
     "index.d.ts",
     "handler.js",
+    "ssr-storage.js",
     "assets.js",
     "vercel.js",
     "vercel.d.ts",

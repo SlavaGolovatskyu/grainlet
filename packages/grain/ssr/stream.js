@@ -16,9 +16,10 @@ import { renderDocument, serializeDocumentState } from './document.js';
 import {
   escapeHtml,
   resolvePropValue,
-  serializeAttrs,
-  VOID_TAGS,
+  scriptTextFromChildren,
+  serializeHostElement,
 } from './serialize.js';
+import { isScriptTag } from '../core/shared/security.js';
 import { renderComponentForSSR } from './render-to-string.js';
 
 function wrapContents(inner, marker) {
@@ -128,16 +129,14 @@ function serializeStreamingVnode(vdom, renderComponent, environment) {
   }
 
   const tag = String(type);
-  const key = vdom.key ?? props?.key;
-  const keyAttr = key != null ? ` data-key="${escapeHtml(key)}"` : '';
-  const attrs = serializeAttrs(props);
-  if (VOID_TAGS.has(tag)) return `<${tag}${attrs}${keyAttr} />`;
-  const inner = normalizeChildren(children)
-    .map((child) =>
-      serializeStreamingVnode(child, renderComponent, environment)
-    )
-    .join('');
-  return `<${tag}${attrs}${keyAttr}>${inner}</${tag}>`;
+  const inner = isScriptTag(tag)
+    ? scriptTextFromChildren(children)
+    : normalizeChildren(children)
+        .map((child) =>
+          serializeStreamingVnode(child, renderComponent, environment)
+        )
+        .join('');
+  return serializeHostElement(tag, props, vdom.key ?? props?.key, inner);
 }
 
 function patchChunk(id, html, nonce) {

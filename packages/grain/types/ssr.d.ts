@@ -81,6 +81,10 @@ export declare function setSSRContextStorage(storage: {
   getStore(): SSRContext | undefined;
   run<T>(context: SSRContext, fn: () => T): T;
 }): void;
+export declare function ensureSSRContextStorage(): {
+  getStore(): SSRContext | undefined;
+  run<T>(context: SSRContext, fn: () => T): T;
+} | null;
 
 export declare function isServer(): boolean;
 
@@ -161,7 +165,10 @@ export declare function createRequestHandler(
 ): (request: Request, platformContext?: unknown) => Promise<Response>;
 
 export declare function createNodeHandler(
-  options: RequestHandlerOptions
+  options: RequestHandlerOptions & {
+    origin?: string;
+    allowedHosts?: string[];
+  }
 ): (
   request: {
     method?: string;

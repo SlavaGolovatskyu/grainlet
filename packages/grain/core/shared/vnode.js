@@ -55,9 +55,7 @@ export function isStructuredChild(value) {
   return value != null && typeof value === 'object' && 'type' in value;
 }
 
-export function isEventProp(key) {
-  return key === 'onClick' || key === 'onclick' || /^on[A-Z]/.test(key);
-}
+export { isEventProp } from './security.js';
 
 /**
  * Merge vnode.children into props when props.children is unset.

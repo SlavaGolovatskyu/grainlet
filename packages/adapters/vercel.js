@@ -1,4 +1,5 @@
 import { createGrainletHandler } from './handler.js';
+import './ssr-storage.js';
 
 export function createVercelHandler(options = {}) {
   const handleRequest = createGrainletHandler(options);

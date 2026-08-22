@@ -1,5 +1,6 @@
 import { AuthSdkError, toAuthSdkError } from './errors.js';
 import { loadScript } from './loadScript.js';
+import { createOAuthState } from './popup.js';
 
 const APPLE_SCRIPT =
   'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
@@ -27,15 +28,24 @@ export async function getAppleCredential(config = {}, input = {}) {
   }
 
   try {
+    const state = input.state ?? config.state ?? createOAuthState();
+    const nonce = input.nonce ?? config.nonce ?? createOAuthState();
     appleAuth.init({
       clientId: config.clientId,
       scope: config.scope ?? 'name email',
       redirectURI: config.redirectURI,
-      state: input.state ?? config.state,
-      nonce: input.nonce ?? config.nonce,
+      state,
+      nonce,
       usePopup: true,
     });
     const result = await appleAuth.signIn();
+    const returnedState =
+      result?.authorization?.state ?? result?.state;
+    if (returnedState != null && returnedState !== state) {
+      throw new AuthSdkError('OAuth state validation failed.', {
+        code: 'OAuthStateMismatch',
+      });
+    }
     const idToken =
       result?.authorization?.id_token ??
       result?.authorization?.idToken ??

@@ -1,3 +1,9 @@
+import {
+  isSafeAttributeName,
+  isUrlAttribute,
+  sanitizeUrl,
+} from '../core/shared/security.js';
+import { isEventProp } from '../core/shared/vnode.js';
 import { escapeHtml } from './serialize.js';
 import { renderHead } from './head.js';
 
@@ -12,11 +18,26 @@ export function serializeDocumentState(value) {
 
 function renderScript(script, nonce) {
   if (typeof script === 'string') {
-    return `<script type="module" src="${escapeHtml(script)}"${nonce ? ` nonce="${escapeHtml(nonce)}"` : ''}></script>`;
+    const src = sanitizeUrl(script, 'src', 'script');
+    if (src == null) return '';
+    return `<script type="module" src="${escapeHtml(src)}"${nonce ? ` nonce="${escapeHtml(nonce)}"` : ''}></script>`;
   }
   const attributes = Object.entries(script || {})
-    .filter(([, value]) => value != null && value !== false)
-    .map(([name, value]) => `${name}="${escapeHtml(value)}"`)
+    .filter(([name, value]) => {
+      if (value == null || value === false) return false;
+      if (isEventProp(name) || !isSafeAttributeName(name)) return false;
+      if (name.toLowerCase() === 'srcdoc') return false;
+      return true;
+    })
+    .map(([name, value]) => {
+      let next = value;
+      if (isUrlAttribute(name)) {
+        next = sanitizeUrl(value, name, 'script');
+        if (next == null) return '';
+      }
+      return `${name}="${escapeHtml(next)}"`;
+    })
+    .filter(Boolean)
     .join(' ');
   return `<script${attributes ? ` ${attributes}` : ''}></script>`;
 }
@@ -34,7 +55,7 @@ export function wrapHtmlDocument(body, options = {}) {
       if (typeof src === 'string') return renderScript(src, options.nonce);
       return typeof src === 'object'
         ? renderScript({ nonce: options.nonce, ...src })
-        : String(src);
+        : '';
     })
     .join('\n    ');
 

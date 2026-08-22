@@ -1,5 +1,15 @@
 import { createBindingEffect } from '../../signals/createEffect/createEffect.js';
 import {
+  eventName,
+  isJsonScriptType,
+  isSafeAttributeName,
+  isSafeTagName,
+  isScriptTag,
+  isUrlAttribute,
+  sanitizeStyleValue,
+  sanitizeUrl,
+} from '../shared/security.js';
+import {
   BOOLEAN_ATTRS,
   isFragmentType,
   isComponentType,
@@ -52,14 +62,6 @@ function clearRefTree(node) {
   for (let i = 0; i < children.length; i++) {
     clearRefTree(children[i]);
   }
-}
-
-function eventName(key) {
-  if (key === 'onClick' || key === 'onclick') return 'click';
-  if (key.startsWith('on') && key.length > 2) {
-    return key.slice(2).toLowerCase();
-  }
-  return null;
 }
 
 function disposeTextBinding(node) {
@@ -228,10 +230,14 @@ function setStaticProp(el, key, value) {
 
   if (key === 'style') {
     if (typeof value === 'string') {
-      el.style.cssText = value;
+      el.style.cssText = sanitizeStyleValue(value);
     } else if (value && typeof value === 'object') {
       el.style.cssText = '';
-      Object.assign(el.style, value);
+      const safe = {};
+      for (const [name, item] of Object.entries(value)) {
+        safe[name] = sanitizeStyleValue(item);
+      }
+      Object.assign(el.style, safe);
     } else {
       el.style.cssText = '';
     }
@@ -250,6 +256,21 @@ function setStaticProp(el, key, value) {
     el[key] = on;
     if (on) el.setAttribute(key, '');
     else el.removeAttribute(key);
+    return;
+  }
+
+  if (key.toLowerCase() === 'srcdoc' || !isSafeAttributeName(key)) {
+    el.removeAttribute(key);
+    return;
+  }
+
+  if (isUrlAttribute(key)) {
+    const safe = sanitizeUrl(value, key, el.tagName);
+    if (safe == null) {
+      el.removeAttribute(key);
+      return;
+    }
+    el.setAttribute(key, String(safe));
     return;
   }
 
@@ -452,9 +473,20 @@ export function createDom(vdom, owner, path = '0') {
     return host;
   }
 
+  if (!isSafeTagName(String(type))) {
+    return document.createTextNode('');
+  }
+
   const el = document.createElement(type);
   applyProps(el, vdom.props, owner);
   setNodeKey(el, vnodeKey(vdom));
+  if (isScriptTag(type)) {
+    const scriptType = el.getAttribute('type');
+    if (isJsonScriptType(scriptType)) {
+      appendVdomChildren(el, vdom.children, owner, path);
+    }
+    return el;
+  }
   appendVdomChildren(el, vdom.children, owner, path);
   return el;
 }
@@ -606,6 +638,14 @@ export function patchDom(parent, oldDom, newVdom, owner, path = '0') {
   }
 
   applyProps(oldDom, newVdom.props, owner);
+  if (
+    isScriptTag(newVdom.type)
+    && !isJsonScriptType(
+      oldDom.getAttribute('type') ?? newVdom.props?.type
+    )
+  ) {
+    return oldDom;
+  }
   patchChildren(oldDom, normalizeChildren(newVdom.children), owner, path);
   return oldDom;
 }
@@ -825,6 +865,14 @@ export function adoptDom(existingNode, vdom, owner, path = '0') {
   }
 
   applyProps(existingNode, vdom.props, owner);
+  if (
+    isScriptTag(vdom.type)
+    && !isJsonScriptType(
+      existingNode.getAttribute('type') ?? vdom.props?.type
+    )
+  ) {
+    return existingNode;
+  }
   adoptChildren(existingNode, normalizeChildren(vdom.children), owner, path);
   return existingNode;
 }

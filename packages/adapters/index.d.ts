@@ -32,6 +32,7 @@ export interface EmitPlatformOutputOptions extends GrainletHandlerOptions {
   origin?: string;
   name?: string;
   compatibilityDate?: string;
+  compatibilityFlags?: string[];
 }
 
 export declare function emitPlatformOutput(

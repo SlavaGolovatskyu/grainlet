@@ -3,6 +3,7 @@ import {
   renderRouteDocument,
   renderRouteToReadableStream,
 } from '../route/ssr/prepare.js';
+import { ensureSSRContextStorage } from './context.js';
 
 function mergeHeaders(target, source) {
   source?.forEach?.((value, key) => target.set(key, value));
@@ -13,6 +14,7 @@ export function createRequestHandler(options) {
   if (typeof options?.App !== 'function') {
     throw new TypeError('createRequestHandler requires an App component');
   }
+  ensureSSRContextStorage();
   return async function handleRequest(request, platformContext) {
     const queryClient = options.createQueryClient?.({
       platformContext,

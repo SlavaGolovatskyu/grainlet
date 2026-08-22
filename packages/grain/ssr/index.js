@@ -14,6 +14,7 @@ export {
   isServer,
   getSSRContext,
   setSSRContextStorage,
+  ensureSSRContextStorage,
 } from './context.js';
 export { escapeHtml, serializeVnode } from './serialize.js';
 export {
