@@ -647,6 +647,41 @@ async function testHorizontalImperativeNavigation() {
   root.remove();
 }
 
+async function testWrappedApiRef() {
+  const items = Array.from({ length: 100 }, (_, i) => ({ id: i }));
+  const holder = { api: null, setApi: (api) => { holder.api = api; } };
+
+  const App = createComponent(() =>
+    jsx(VirtualList, {
+      each: items,
+      itemHeight: 20,
+      height: 100,
+      overscan: 1,
+      // Simulates Babel wrap: apiRef={holder.setApi} → () => holder.setApi
+      apiRef: () => holder.setApi,
+      children: (item) => jsx('span', null, String(item.id)),
+    })
+  );
+
+  const root = document.createElement('div');
+  document.body.appendChild(root);
+  render(App, root);
+  await flush();
+
+  const scroller = root.querySelector('[data-grainlet-virtual-list]');
+  if (!holder.api || holder.api.getElement() !== scroller) {
+    throw new Error('wrapped apiRef should resolve to the mounted API');
+  }
+  if (!holder.api.scrollToIndex(20, { align: 'center' })) {
+    throw new Error('wrapped apiRef navigation should succeed');
+  }
+  await flush();
+  if (scroller.scrollTop !== 360) {
+    throw new Error(`wrapped apiRef scroll failed (top=${scroller.scrollTop})`);
+  }
+  root.remove();
+}
+
 await testEmptyFallback();
 await testWindowedMountCount();
 await testScrollShiftsWindow();
@@ -658,6 +693,7 @@ await testEndReachedRearmsAfterGrow();
 await testHorizontalScrollShiftsWindow();
 await testScrollerCustomizationAndRefs();
 await testImperativeApiNavigation();
+await testWrappedApiRef();
 await testHorizontalImperativeNavigation();
 console.log('virtual-list tests passed');
 process.exit(0);

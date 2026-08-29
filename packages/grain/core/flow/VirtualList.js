@@ -17,6 +17,19 @@ function resolveOrientation(value) {
   return 'vertical';
 }
 
+/** Babel may wrap `apiRef={obj.setter}` as `() => obj.setter` — unwrap nullary accessors only. */
+function readRefCallback(value) {
+  if (typeof value === 'function' && value.length === 0) {
+    try {
+      const resolved = value();
+      if (typeof resolved === 'function') return resolved;
+    } catch {
+      /* keep original */
+    }
+  }
+  return value;
+}
+
 function buildRows(bag, items, start, end, keyed, render, horizontal) {
   const mainSize = bag.itemSize;
 
@@ -462,7 +475,7 @@ export function VirtualList(props) {
     bag,
     'apiRef',
     'notifiedApiRef',
-    props.apiRef,
+    readRefCallback(props.apiRef),
     bag.api
   );
 

@@ -123,8 +123,8 @@ export default function wrapJsxAccessors({ types: t }) {
             return;
           }
 
-          // Refs: never wrap; rewrite bare identifiers to assignment callbacks.
-          if (attrName === 'ref') {
+          // Refs / imperative API refs: never wrap; rewrite bare identifiers to assignment callbacks.
+          if (attrName === 'ref' || attrName === 'apiRef') {
             const exprPath = path.get('expression');
             if (exprPath.isJSXEmptyExpression()) return;
             if (
@@ -133,7 +133,7 @@ export default function wrapJsxAccessors({ types: t }) {
             ) {
               return;
             }
-            if (transformRefAssignment(exprPath)) return;
+            if (attrName === 'ref' && transformRefAssignment(exprPath)) return;
             return;
           }
         }
