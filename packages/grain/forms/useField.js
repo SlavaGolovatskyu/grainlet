@@ -19,7 +19,7 @@ export function useField(nameOrProps) {
     throw new Error('useField: name is required');
   }
 
-  form.registerField(name, { validate: props.validate });
+  form.registerField(name, { validate: readProp(props.validate) });
   onCleanup(() => form.unregisterField(name));
 
   const field = {

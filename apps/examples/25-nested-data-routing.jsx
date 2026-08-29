@@ -1,3 +1,4 @@
+import { render } from 'grainlet';
 import {
   Link,
   Outlet,
@@ -30,9 +31,9 @@ function Project() {
   return <h1>{() => project()?.name}</h1>;
 }
 
-export default function NestedDataRoutingExample() {
+function NestedDataRoutingExample() {
   return (
-    <Router mode="nested" fallback={<p>Preparing route…</p>}>
+    <Router mode="nested" basename="/nested-routing" fallback={<p>Preparing route…</p>}>
       <Route component={Layout}>
         <Route index component={Home} />
         <Route
@@ -54,3 +55,5 @@ export default function NestedDataRoutingExample() {
     </Router>
   );
 }
+
+render(NestedDataRoutingExample, document.getElementById('app'));

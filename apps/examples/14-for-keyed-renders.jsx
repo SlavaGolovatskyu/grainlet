@@ -1,5 +1,7 @@
 import { createSignal, render, For } from 'grainlet';
 
+let nextRowId = 4;
+
 /**
  * Proves keyed For only re-runs the changed row.
  * Each Item closes over its own render counter — bump one row and only that
@@ -33,7 +35,6 @@ function createItem(id, label) {
 }
 
 function ForKeyedDemo() {
-  let nextId = 4;
   const [rows, setRows] = createSignal([
     createItem(1, 'Alpha'),
     createItem(2, 'Bravo'),
@@ -51,7 +52,7 @@ function ForKeyedDemo() {
   };
 
   const add = () => {
-    const id = nextId++;
+    const id = nextRowId++;
     setRows((list) => [...list, createItem(id, `Item ${id}`)]);
   };
 

@@ -23,7 +23,7 @@ function FriendsDemo() {
       </p>
 
       <FormProvider
-        initialValues={{ title: '', friends: [''] }}
+        initialValues={{ title: '', friends: [{ name: '' }] }}
         rules={{
           title: [required('Title is required'), minLength(2)],
         }}
@@ -49,19 +49,20 @@ function FriendsDemo() {
               {(helpers) => (
                 <div>
                   <For each={() => helpers.form.values().friends}>
-                    {(_name, index) => {
+                    {(_friend, index) => {
                       const i =
                         typeof index === 'function' ? index : () => index;
+                      const namePath = () => `friends[${i()}].name`;
                       return (
                         <div class="friend">
                           <div class="col">
                             <Field
-                              name={`friends[${i()}]`}
+                              name={namePath}
                               type="text"
                               placeholder={`Friend #${i() + 1}`}
                               validate={[required('Name is required')]}
                             />
-                            <ErrorMessage name={`friends[${i()}]`}>
+                            <ErrorMessage name={namePath}>
                               {(msg) => <p class="error">{msg}</p>}
                             </ErrorMessage>
                           </div>
@@ -84,7 +85,7 @@ function FriendsDemo() {
                     <button
                       type="button"
                       class="ghost"
-                      onClick={() => helpers.push('')}
+                      onClick={() => helpers.push({ name: '' })}
                     >
                       Add friend
                     </button>

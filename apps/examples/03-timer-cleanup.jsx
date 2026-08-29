@@ -1,4 +1,4 @@
-import { createSignal, createEffect, render } from 'grainlet';
+import { createSignal, createEffect, render, Show } from 'grainlet';
 
 export function Timer() {
   const [seconds, setSeconds] = createSignal(0);
@@ -39,11 +39,12 @@ export function Timer() {
     <div>
       <div class="timer-display">{seconds()}s</div>
       <div style="text-align: center;">
-        {isRunning() ? (
+        <Show when={isRunning()}>
           <button class="pause-btn" onclick={pause}>Pause</button>
-        ) : (
+        </Show>
+        <Show when={!isRunning()}>
           <button class="start-btn" onclick={start}>Start</button>
-        )}
+        </Show>
         <button class="reset-btn" onclick={reset}>Reset</button>
       </div>
       <p style="text-align: center; color: #666; margin-top: 20px;">

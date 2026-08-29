@@ -8,6 +8,21 @@ export function onCleanup(fn) {
     throw new Error('onCleanup must be called within an effect or a component');
   }
 
+  // Component body (not a nested createEffect callback).
+  if (component?._inRender) {
+    if (!component._cleanups) {
+      component._cleanups = [];
+    }
+    component._cleanups.push(fn);
+
+    return () => {
+      const index = component._cleanups.indexOf(fn);
+      if (index > -1) {
+        component._cleanups.splice(index, 1);
+      }
+    };
+  }
+
   if (effect) {
     if (!effect._cleanups) {
       effect._cleanups = [];

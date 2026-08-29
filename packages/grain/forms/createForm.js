@@ -12,7 +12,7 @@ import {
   runValidate,
   runValidationSchemaAt,
 } from './utils/validate.js';
-import { normalizeValidators, runRules } from './validators.js';
+import { normalizeValidators, runRules, coerceValidationResult } from './validators.js';
 
 function readConfig(config, key, fallback) {
   const v = config[key];
@@ -171,13 +171,13 @@ export function createForm(config = {}) {
       if (result != null && typeof result.then === 'function') {
         result = await result;
       }
-      message = result == null || result === '' ? undefined : result;
+      message = coerceValidationResult(result);
     } else if (opts().rules && opts().rules[field] != null) {
       const ruleErrors = await runRules(
         { [field]: opts().rules[field] },
         current
       );
-      message = getIn(ruleErrors, field);
+      message = coerceValidationResult(getIn(ruleErrors, field));
     } else if (opts().validationSchema) {
       message = await runValidationSchemaAt(
         opts().validationSchema,

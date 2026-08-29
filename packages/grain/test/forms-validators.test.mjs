@@ -87,13 +87,31 @@ function assert(cond, msg) {
 }
 
 {
-  assert((await required(() => 'Lazily required')('')) === 'Lazily required', 'lazy msg');
+  const lazy = () => 'Lazily required';
+  const stored = await required(lazy)('');
+  assert(typeof stored === 'function', 'lazy msg stored as getter');
+  assert(stored() === 'Lazily required', 'lazy msg resolves on read');
+
   let locale = 'en';
   const t = (key) => (locale === 'uk' ? 'Обовʼязково' : 'Required');
-  const v = required(() => t('validation.required'));
-  assert((await v('')) === 'Required', 'lazy en');
+  const msgFn = await required(() => t('validation.required'))('');
+  assert(typeof msgFn === 'function', 'lazy locale getter');
+  assert(msgFn() === 'Required', 'lazy en');
   locale = 'uk';
-  assert((await v('')) === 'Обовʼязково', 'lazy uk');
+  assert(msgFn() === 'Обовʼязково', 'lazy uk without re-validate');
+}
+
+{
+  const { formatError, coerceValidationResult } = await import('../forms/validators.js');
+  const inner = required('Name is required');
+  assert(
+    formatError(inner) === 'Name is required',
+    'formatError resolves validator fn'
+  );
+  assert(
+    coerceValidationResult(inner) === 'Name is required',
+    'coerceValidationResult resolves validator fn'
+  );
 }
 
 console.log('forms-validators: PASS');

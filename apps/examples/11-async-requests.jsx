@@ -155,7 +155,7 @@ export function AsyncDemo() {
         </p>
         <ul class="results">
           {users().map((u) => (
-            <li>
+            <li key={u.id}>
               <strong>{u.name}</strong>
               <span>{u.email}</span>
             </li>
@@ -198,7 +198,7 @@ export function AsyncDemo() {
         )}
         <ol class="posts">
           {posts().map((p) => (
-            <li>
+            <li key={p.id}>
               <strong>{p.title}</strong>
             </li>
           ))}

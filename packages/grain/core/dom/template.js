@@ -90,6 +90,19 @@ function setAttr(el, key, value) {
     else el.removeAttribute(key);
     return;
   }
+  // Text inputs: property, not attribute (attribute won't clear user-typed value).
+  if (key === 'value' && 'value' in el) {
+    const next = value == null ? '' : String(value);
+    if (el.value !== next) {
+      el.value = next;
+    }
+    return;
+  }
+  if (key === 'checked' && 'checked' in el) {
+    const on = Boolean(value);
+    if (el.checked !== on) el.checked = on;
+    return;
+  }
   if (key.toLowerCase() === 'srcdoc' || !isSafeAttributeName(key)) {
     el.removeAttribute(key);
     return;
@@ -114,6 +127,7 @@ function setAttr(el, key, value) {
 
 /** Bind a reactive text hole (placeholder text node). */
 export function bindTemplateText(node, accessor) {
+  if (!node) return;
   disposeText(node);
   node[TEXT_DISPOSE] = createBindingEffect(() => {
     const next = toText(accessor());

@@ -1,5 +1,5 @@
 import { getIn, setIn, mergeErrors } from './paths.js';
-import { normalizeValidators, runRules } from '../validators.js';
+import { normalizeValidators, runRules, coerceValidationResult } from '../validators.js';
 
 /**
  * Normalize validate() result to a Promise of errors object.
@@ -103,7 +103,7 @@ export async function runFieldValidators(fieldRegistry, values) {
         result = await result;
       }
       if (result != null && result !== '') {
-        errors = setIn(errors, name, result);
+        errors = setIn(errors, name, coerceValidationResult(result));
       }
     })
   );

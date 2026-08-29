@@ -20,7 +20,7 @@ const MESSAGES = {
     'validation.required': 'Required',
     'validation.email': 'Enter a valid email',
     'validation.minLength': 'Use at least {count} characters',
-    switchHint: 'Switch language, blur/submit again — messages follow the locale.',
+    switchHint: 'Switch language — validation messages update immediately.',
   },
   uk: {
     title: 'Перекладені повідомлення валідації',
@@ -33,7 +33,7 @@ const MESSAGES = {
     'validation.email': 'Введіть коректний email',
     'validation.minLength': 'Щонайменше {count} символів',
     switchHint:
-      'Змініть мову й знову blur/submit — тексти помилок підуть за локаллю.',
+      'Змініть мову — повідомлення валідації оновляться одразу.',
   },
 };
 
@@ -55,7 +55,7 @@ function I18nFormsDemo() {
   const [locale, setLocale] = createSignal('en');
   const t = createT(locale);
 
-  const rules = () => ({
+  const rules = {
     email: [
       required(() => t('validation.required')),
       isEmail(() => t('validation.email')),
@@ -64,7 +64,7 @@ function I18nFormsDemo() {
       required(() => t('validation.required')),
       minLength(8, () => t('validation.minLength', { count: 8 })),
     ],
-  });
+  };
 
   return (
     <div class="demo">
@@ -90,7 +90,7 @@ function I18nFormsDemo() {
 
       <FormProvider
         initialValues={{ email: '', password: '' }}
-        rules={rules()}
+        rules={rules}
         onSubmit={async (values) => {
           console.log('i18n form', values, 'locale', locale());
           alert(`${t('submit')}: ${values.email}`);

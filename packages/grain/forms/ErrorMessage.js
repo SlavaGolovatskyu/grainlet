@@ -2,6 +2,7 @@ import { Show } from '../index.js';
 import { jsx } from '../core/jsx-compiler-new/jsx-runtime.js';
 import { useFormContext } from './context.js';
 import { getIn } from './utils/paths.js';
+import { formatError } from './validators.js';
 
 function readProp(value) {
   return typeof value === 'function' ? value() : value;
@@ -21,7 +22,7 @@ export function ErrorMessage(props) {
     const touched = getIn(form.touched(), name);
     const error = getIn(form.errors(), name);
     if (!touched || error == null || error === '') return undefined;
-    return typeof error === 'string' ? error : String(error);
+    return formatError(error);
   };
 
   const As = readProp(props.component) || readProp(props.as);

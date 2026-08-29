@@ -1,28 +1,5 @@
 import { createSignal, createEffect, onCleanup, render } from 'grainlet';
 
-function EffectLogs(props) {
-  const items = props.logs();
-
-  return (
-    <div class="log-box">
-      {items.length === 0 ? (
-        <p style="color: #999; text-align: center;">
-          No logs yet. Change the name or count to see effects in action!
-        </p>
-      ) : (
-        items
-          .slice()
-          .reverse()
-          .map((log, index) => (
-            <div key={index} class={`log-entry ${log.type}`}>
-              <strong>[{log.timestamp}]</strong> {log.message}
-            </div>
-          ))
-      )}
-    </div>
-  );
-}
-
 export function EffectsDemo() {
   const [name, setName] = createSignal('');
   const [count, setCount] = createSignal(0);
@@ -104,9 +81,8 @@ export function EffectsDemo() {
             Clear Logs
           </button>
         </div>
-        {/* <EffectLogs logs={logs} /> */}
         <div class="log-box">
-          {logs() === 0 ? (
+          {logs().length === 0 ? (
             <p style="color: #999; text-align: center;">
               No logs yet. Change the name or count to see effects in action!
             </p>

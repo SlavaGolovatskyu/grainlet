@@ -26,6 +26,7 @@ export function touchAll(values, value = true) {
 /** True if errors object has any string (or nested) error. */
 export function hasErrors(errors) {
   if (errors == null) return false;
+  if (typeof errors === 'function') return true;
   if (typeof errors === 'string') return errors.length > 0;
   if (Array.isArray(errors)) return errors.some(hasErrors);
   if (typeof errors === 'object') {

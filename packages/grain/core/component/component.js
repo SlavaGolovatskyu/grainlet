@@ -84,7 +84,13 @@ const componentProto = {
         }
 
         const isFirstRender = !this._effectsInitialized;
-        const result = this._componentFn(this._props);
+        this._inRender = true;
+        let result;
+        try {
+          result = this._componentFn(this._props);
+        } finally {
+          this._inRender = false;
+        }
 
         // Keep owner as currentComponent while building DOM so text/prop
         // bindings can register and track signals without re-running this fn.
@@ -132,11 +138,12 @@ const componentProto = {
       }
     };
 
+    // Set before createEffect runs so onCleanup in the component body can tell
+    // render-effect cleanups apart from nested createEffect cleanups.
+    this._renderEffect = effect;
+
     // createEffect registers on this (currentComponent) and runs immediately
     createEffect(effect);
-    // Same function reference subscribers invoke (do not use _effects.at(-1);
-    // nested createEffects are also pushed during the first run).
-    this._renderEffect = effect;
 
     setCurrentComponent(previousComponent);
   },

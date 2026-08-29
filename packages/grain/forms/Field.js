@@ -18,7 +18,7 @@ export function Field(props) {
   }
 
   const type = readProp(props.type);
-  const validate = props.validate;
+  const validate = readProp(props.validate);
   const As = readProp(props.as) || readProp(props.component) || 'input';
 
   form.registerField(name, { validate });

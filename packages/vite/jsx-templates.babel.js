@@ -10,6 +10,7 @@
  */
 
 const HOLE = ' ';
+const HOLE_COMMENT = '<!--g-->';
 
 function isEventAttrName(name) {
   if (typeof name !== 'string' || name.length < 3) return false;
@@ -170,6 +171,8 @@ function compileElement(jsxEl, path, holes, t) {
   html += '>';
 
   let childIndex = 0;
+  let lastWasStaticText = false;
+  let lastWasTextHole = false;
   for (const child of jsxEl.children) {
     if (t.isJSXText(child)) {
       const text = child.value.replace(/\s+/g, ' ');
@@ -179,14 +182,25 @@ function compileElement(jsxEl, path, holes, t) {
         // the same way in all cases when using innerHTML.
         continue;
       }
+      if (lastWasTextHole) {
+        html += HOLE_COMMENT;
+        childIndex++;
+      }
       html += escapeText(text);
       childIndex++;
+      lastWasStaticText = true;
+      lastWasTextHole = false;
       continue;
     }
 
     if (t.isJSXExpressionContainer(child)) {
       if (t.isJSXEmptyExpression(child.expression)) continue;
-      // Dynamic child → text hole
+      // Dynamic child → text hole. Adjacent static text coalesces in innerHTML;
+      // insert a comment anchor so walkPath can find a distinct text node.
+      if (lastWasStaticText) {
+        html += HOLE_COMMENT;
+        childIndex++;
+      }
       html += HOLE;
       holes.push({
         kind: 'text',
@@ -194,12 +208,16 @@ function compileElement(jsxEl, path, holes, t) {
         expr: child.expression,
       });
       childIndex++;
+      lastWasStaticText = false;
+      lastWasTextHole = true;
       continue;
     }
 
     if (t.isJSXElement(child)) {
       html += compileElement(child, selfPath.concat(childIndex), holes, t);
       childIndex++;
+      lastWasStaticText = false;
+      lastWasTextHole = false;
       continue;
     }
   }
@@ -210,6 +228,17 @@ function compileElement(jsxEl, path, holes, t) {
 
 function pathToAst(pathArr, t) {
   return t.arrayExpression(pathArr.map((n) => t.numericLiteral(n)));
+}
+
+/** Wrap hole expr as a reactive accessor; signal getters must be invoked. */
+function accessorExpr(expr, t) {
+  if (t.isArrowFunctionExpression(expr) || t.isFunctionExpression(expr)) {
+    return expr;
+  }
+  if (t.isIdentifier(expr)) {
+    return t.arrowFunctionExpression([], t.callExpression(expr, []));
+  }
+  return t.arrowFunctionExpression([], expr);
 }
 
 export default function jsxTemplates({ types: t }) {
@@ -315,11 +344,7 @@ export default function jsxTemplates({ types: t }) {
               t.expressionStatement(
                 t.callExpression(ids.bindText, [
                   targetExpr,
-                  // Ensure accessor: wrap if not already a function
-                  t.isArrowFunctionExpression(hole.expr) ||
-                  t.isFunctionExpression(hole.expr)
-                    ? hole.expr
-                    : t.arrowFunctionExpression([], hole.expr),
+                  accessorExpr(hole.expr, t),
                 ])
               )
             );
@@ -329,10 +354,7 @@ export default function jsxTemplates({ types: t }) {
                 t.callExpression(ids.bindProp, [
                   targetExpr,
                   t.stringLiteral(hole.name),
-                  t.isArrowFunctionExpression(hole.expr) ||
-                  t.isFunctionExpression(hole.expr)
-                    ? hole.expr
-                    : t.arrowFunctionExpression([], hole.expr),
+                  accessorExpr(hole.expr, t),
                 ])
               )
             );

@@ -52,11 +52,41 @@ export const all = compose;
 
 /**
  * @typedef {string | (() => string)} MessageInput
- * Resolve at validation time so `() => t('key')` picks up locale changes.
+ * Lazy `() => t('key')` getters are stored on the form and resolved at display time.
  */
 function resolveMessage(custom, fallback) {
   const raw = custom == null || custom === '' ? fallback : custom;
-  return typeof raw === 'function' ? raw() : raw;
+  return typeof raw === 'function' ? raw : raw;
+}
+
+/** Nullary fn from `() => t('key')` — not a field validator (which takes value). */
+export function isLazyMessageGetter(fn) {
+  return typeof fn === 'function' && fn.length === 0;
+}
+
+/**
+ * Validator output for storage: plain strings or lazy message getters only.
+ * Never store validator fns (e.g. `(value) => …` from `required()`).
+ */
+export function coerceValidationResult(result) {
+  if (result == null || result === '') return undefined;
+  if (typeof result === 'function') {
+    if (isLazyMessageGetter(result)) return result;
+    let resolved = result(undefined, undefined, { path: '' });
+    if (resolved != null && typeof resolved.then === 'function') {
+      return undefined;
+    }
+    return coerceValidationResult(resolved);
+  }
+  return typeof result === 'string' ? result : String(result);
+}
+
+/** Resolve a stored error (string or lazy getter) for display. */
+export function formatError(error) {
+  const resolved = coerceValidationResult(error);
+  if (resolved == null || resolved === '') return undefined;
+  if (isLazyMessageGetter(resolved)) return resolved();
+  return typeof resolved === 'string' ? resolved : String(resolved);
 }
 
 /** Fails when value is empty (null, '', [], {}). */
@@ -264,7 +294,7 @@ export function rules(map) {
           result = await result;
         }
         if (result != null && result !== '') {
-          errors = setIn(errors, path, result);
+          errors = setIn(errors, path, coerceValidationResult(result));
         }
       })
     );

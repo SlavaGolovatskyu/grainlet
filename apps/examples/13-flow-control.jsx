@@ -9,6 +9,8 @@ import {
   createResource,
 } from 'grainlet';
 
+let nextTodoId = 4;
+
 function Page(props) {
   return (
     <div class="page-card">
@@ -51,12 +53,11 @@ function FlowDemo() {
     { id: 3, text: 'Write Switch' },
   ]);
   const [draft, setDraft] = createSignal('');
-  let nextId = 4;
 
   const addTodo = () => {
     const text = draft().trim();
     if (!text) return;
-    setTodos((list) => [...list, { id: nextId++, text }]);
+    setTodos((list) => [...list, { id: nextTodoId++, text }]);
     setDraft('');
   };
 
