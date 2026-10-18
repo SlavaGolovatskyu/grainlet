@@ -1,3 +1,5 @@
+import 'maplibre-gl/dist/maplibre-gl.css';
+import './styles/globals.css';
 import { render } from 'grainlet';
 import { AuthProvider } from 'grainlet/auth';
 import { I18nProvider } from 'grainlet/i18n';

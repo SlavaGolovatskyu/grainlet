@@ -1,0 +1,101 @@
+/**
+ * UX-Pilot light palette (Voyage Navy + coral) — scoped to v2 only.
+ * Not user-facing branding; Zenwayro copy comes from i18n.
+ */
+.zenwayro-v2-ui {
+  color-scheme: light;
+
+  /* Raw HSL components for shadcn-style hsl(var(--token)) usage */
+  --background: 220 15% 97%;
+  --foreground: 220 60% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 60% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 60% 12%;
+  --primary: 222 63% 15%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 213 52% 24%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 220 20% 93%;
+  --muted-foreground: 220 15% 50%;
+  --accent: 14 100% 64%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 220 20% 88%;
+  --input: 220 20% 88%;
+  --ring: 213 52% 40%;
+  --radius: 0.75rem;
+
+  /* Tailwind v4 color tokens (resolved on this subtree; wins over html.dark for v2) */
+  --color-background: hsl(220 15% 97%);
+  --color-foreground: hsl(220 60% 12%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(220 60% 12%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(220 60% 12%);
+  --color-primary: hsl(222 63% 15%);
+  --color-primary-foreground: hsl(210 40% 98%);
+  --color-secondary: hsl(213 52% 24%);
+  --color-secondary-foreground: hsl(210 40% 98%);
+  --color-muted: hsl(220 20% 93%);
+  --color-muted-foreground: hsl(220 15% 50%);
+  --color-accent: hsl(14 100% 64%);
+  --color-accent-foreground: hsl(0 0% 100%);
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(210 40% 98%);
+  --color-border: hsl(220 20% 88%);
+  --color-input: hsl(220 20% 88%);
+  --color-ring: hsl(213 52% 40%);
+
+  /* Brand palette hex (internal) */
+  --navy-deep: #0f1b3d;
+  --navy-mid: #1e3a5f;
+  --navy-light: #3b6fa0;
+  --coral: #ff6b4a;
+  --coral-light: #ff8a70;
+  --sand: #f5f0e8;
+  --sand-dark: #e8e0d0;
+
+  font-family: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.zenwayro-v2-ui .glass {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.zenwayro-v2-ui .glass-dark {
+  background: rgba(15, 27, 61, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(59, 111, 160, 0.35);
+}
+
+.zenwayro-v2-ui .voyage-gradient {
+  background: linear-gradient(135deg, #0f1b3d 0%, #1e3a5f 50%, #3b6fa0 100%);
+}
+
+.zenwayro-v2-ui .coral-gradient {
+  background: linear-gradient(135deg, #ff6b4a 0%, #ff8a70 100%);
+}
+
+.zenwayro-v2-ui .bottom-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  margin: 0 auto 12px;
+}
+
+.zenwayro-v2-ui .no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.zenwayro-v2-ui .no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

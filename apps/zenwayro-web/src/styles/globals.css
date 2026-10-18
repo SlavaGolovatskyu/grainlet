@@ -1,0 +1,94 @@
+@import 'tailwindcss';
+@plugin 'tailwindcss-animate';
+@import './tokens.css';
+@import './voyage-palette.css';
+
+@theme inline {
+  --color-nav-link-hover: var(--ds-accent-hover);
+  --color-surface: var(--ds-surface);
+  --color-surface-elevated: var(--ds-surface-elevated);
+  --color-surface-muted: var(--ds-surface-muted);
+  --color-border: var(--ds-border);
+  --color-border-strong: var(--ds-border-strong);
+  --color-text-primary: var(--ds-text-primary);
+  --color-text-secondary: var(--ds-text-secondary);
+  --color-text-muted: var(--ds-text-muted);
+  --color-text-inverse: var(--ds-text-inverse);
+  --color-accent: var(--ds-accent);
+  --color-accent-hover: var(--ds-accent-hover);
+  --color-accent-muted: var(--ds-accent-muted);
+  --color-accent-foreground: var(--ds-accent-foreground);
+  --color-danger: var(--ds-danger);
+  --color-danger-hover: var(--ds-danger-hover);
+  --color-danger-foreground: var(--ds-danger-foreground);
+  --color-success: var(--ds-success);
+  --color-ring: var(--ds-ring);
+  --radius-sm: var(--ds-radius-sm);
+  --radius-md: var(--ds-radius-md);
+  --radius-lg: var(--ds-radius-lg);
+  --radius-xl: var(--ds-radius-xl);
+  --radius-card: var(--ds-radius-xl);
+  --shadow-sm: var(--ds-shadow-sm);
+  --shadow-md: var(--ds-shadow-md);
+  --shadow-accent: var(--ds-shadow-accent);
+  --font-sans: var(--ds-font-sans);
+  --color-background: hsl(220 15% 97%);
+  --color-foreground: hsl(220 60% 12%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(220 60% 12%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(220 60% 12%);
+  --color-primary: hsl(222 63% 15%);
+  --color-primary-foreground: hsl(210 40% 98%);
+  --color-secondary: hsl(213 52% 24%);
+  --color-secondary-foreground: hsl(210 40% 98%);
+  --color-muted: hsl(220 20% 93%);
+  --color-muted-foreground: hsl(220 15% 50%);
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(210 40% 98%);
+  --color-input: hsl(220 20% 88%);
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --color-background: var(--ds-surface);
+  --color-foreground: var(--ds-text-primary);
+}
+
+.dark {
+  --color-background: var(--ds-surface);
+  --color-foreground: var(--ds-text-primary);
+}
+
+body {
+  color: var(--color-foreground);
+  background: var(--color-background);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role='button']:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.dark .maplibregl-popup-content {
+  background: #1f2937;
+  color: #f3f4f6;
+}
+
+.map-view-raise-bottom-controls .maplibregl-ctrl-bottom-right,
+.map-view-raise-bottom-controls .maplibregl-ctrl-bottom-left {
+  bottom: 6rem;
+}
+
+.map-fullscreen-with-list .maplibregl-ctrl-bottom-right,
+.map-fullscreen-with-list .maplibregl-ctrl-bottom-left {
+  bottom: 10rem;
+}

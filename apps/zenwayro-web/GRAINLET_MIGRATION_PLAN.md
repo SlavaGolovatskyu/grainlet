@@ -1,65 +1,64 @@
 # Zenwayro → Grainlet migration plan
 
-Source: `frontend/` (Next.js 15 App Router, React 19). Target: `apps/zenwayro-web` (Vite + Grainlet SPA). The Next app stays runnable and is not edited.
+Checkpoint: page modules below are implemented and routed in `src/App.jsx`. Unit tests and `vite build` pass. Full browser verification of every flow was not finished. Host-element JSX constants are wrapped by `vite/jsx-const-accessors.js` so Grainlet does not call them as signals.
 
-## Why this target
+Source: `frontend/` (read-only parity). Target: `apps/zenwayro-web` (Vite + Grainlet). Do not edit `frontend/`, `packages/grain`, or `packages/create-grainlet`.
 
-Grainlet apps in this repo are Vite workspaces under `apps/` (`github-lookup`, `ssr-demo`, `create-grainlet` template). `frontend/` is Next (RSC, `next-auth` middleware, OpenNext). Migrating in place would leave one tree on two frameworks. `apps/zenwayro` is deleted in the dirty tree and the root `vite.config.js` still points at it; do not restore those files or edit that config.
+Provider order: Auth → I18n → Query → Router. Tailwind v4 and design tokens load from `src/styles/globals.css`. API base: `VITE_API_URL` or `http://localhost:3001`. Session key `zenwayro.auth.session`. Protected routes redirect to `/`.
 
-Run the new app from `apps/zenwayro-web` with `npm run dev` (port **5174**). Do not `npm install` at the repo root; `grainlet`, `grainlet-vite`, and `vite` already resolve from the monorepo `node_modules`.
+Splat params: `useParams()['*']`. Named params: `useParams().id`.
 
-## What stays vs what is rewritten
+Wire TypeScript types stay in `frontend/src/lib/api/contracts` until a page needs a field; path helpers live in `src/api/paths`.
 
-Stays (copied or called as-is): backend HTTP contracts, `API_URL` default `http://localhost:3001` (`VITE_API_URL`), locale JSON text, later CSS tokens and `maplibre-gl` / `pmtiles`.
+## Acceptance (every row)
 
-Rewritten: every React/Next component, Radix, dnd-kit, motion, react-day-picker, lucide-react, TanStack Query, next-auth, RSC, middleware, Next API routes (`/api/auth`, revalidate, IndexNow). SEO (`sitemap.ts`, JSON-LD, pixels) waits for an explicit `grainlet/ssr` pass.
+A row is done only when the Grainlet page loads real data or the real form, preserves validation, loading, error, and empty states, auth guards, and the source actions. A title-only placeholder, TODO, or dead control is not done.
 
-Grainlet imports only from subpaths. Provider order: **Auth → I18n → Query → Router**. JSX uses `class`, signal reads are `count()`, no React hooks, no `'use client'`.
+## Route matrix
 
-## i18n and auth contracts to preserve
+| Source route | Target file | Access | Status |
+|---|---|---|---|
+| `/` | `src/pages/home/HomePage.jsx` | public | not started |
+| `/explore` | `src/pages/explore/ExplorePage.jsx` | public | not started |
+| `/quiz` | `src/pages/quiz/QuizPage.jsx` | public | not started |
+| `/terms` | `src/pages/legal/TermsPage.jsx` | public | not started |
+| `/privacy` | `src/pages/legal/PrivacyPage.jsx` | public | not started |
+| `/contact` | `src/pages/legal/ContactPage.jsx` | public | not started |
+| `/cookies` | `src/pages/legal/CookiesPage.jsx` | public | not started |
+| `/auth/signin` | `src/pages/SignInPage.jsx` | public | done |
+| `/auth/signup` | `src/pages/auth/SignUpPage.jsx` | public | not started |
+| `/auth/forgot-password` | `src/pages/auth/ForgotPasswordPage.jsx` | public | not started |
+| `/auth/reset-password` | `src/pages/auth/ResetPasswordPage.jsx` | public | not started |
+| `/auth/verify` | `src/pages/auth/VerifyPage.jsx` | public | not started |
+| `/auth/verify-pending` | `src/pages/auth/VerifyPendingPage.jsx` | public | not started |
+| `/popular-trips` | `src/pages/popular/PopularTripsPage.jsx` | public | not started |
+| `/popular-trips/browse` | `src/pages/popular/PopularBrowsePage.jsx` | public | not started |
+| `/popular-trips/*` | `src/pages/popular/PopularTripPage.jsx` | public | not started |
+| `/plan/new` | `src/pages/plan/PlanPage.jsx` (`id=new`) | public | not started |
+| `/plan/:id` | `src/pages/plan/PlanPage.jsx` | public edge | not started |
+| `/plan/shared/*` | `src/pages/plan/SharedPlanPage.jsx` | public | not started |
+| `/trips` | `src/pages/trips/TripsPage.jsx` | protected | not started |
+| `/settings` | `src/pages/settings/SettingsPage.jsx` | protected | not started |
+| `/admin` | `src/pages/admin/AdminHomePage.jsx` | protected | not started |
+| `/admin/images` | `src/pages/admin/AdminImagesPage.jsx` | protected | not started |
+| `/admin/ai-enrichment` | `src/pages/admin/AdminAiEnrichmentPage.jsx` | protected | not started |
+| `/admin/article-import` | `src/pages/admin/AdminArticleImportPage.jsx` | protected | not started |
+| `/admin/article-import/runs` | `src/pages/admin/AdminArticleImportRunsPage.jsx` | protected | not started |
+| `/admin/article-import/runs/:runId` | `src/pages/admin/AdminArticleImportRunPage.jsx` | protected | not started |
+| `/admin/cities/create` | `src/pages/admin/AdminCityCreatePage.jsx` | protected | not started |
+| `/admin/users` | `src/pages/admin/AdminUsersPage.jsx` | protected | not started |
+| `/admin/entities` | `src/pages/admin/AdminEntitiesPage.jsx` | protected | not started |
+| `/admin/entities/:entityKey` | `src/pages/admin/AdminEntityPage.jsx` | protected | not started |
+| `/admin/entities/:entityKey/new` | `src/pages/admin/AdminEntityEditPage.jsx` | protected | not started |
+| `/admin/entities/:entityKey/:recordId` | `src/pages/admin/AdminEntityEditPage.jsx` | protected | not started |
+| unmatched | `src/chrome/NotFoundPage.jsx` | public | not started |
+| notifications bell (no route) | `src/chrome/Notifications.jsx` | session | not started |
+| navbar, bottom nav, footer | `src/chrome/AppChrome.jsx` | shell | not started |
 
-- Locales: `frontend/src/lib/i18n/locales/en.json` top-level keys are namespaces (`common`, `nav`, `home`, …). React `t("home.heroTitle")` splits on the first dot. Grainlet `useTranslation(ns)` is namespace-scoped. Load the JSON as `resources.en[namespace]`, rewrite `{{name}}` → `{name}` at load (Grainlet `interpolate` uses single braces; 46 strings use double braces). Persist locale in `localStorage` key `zenwayro-locale`.
-- Theme flash script before paint: `localStorage` key `zenwayro-theme` (`dark` | `system` | else light), same as `frontend/src/app/layout.tsx`.
-- Auth HTTP (`frontend/src/lib/api/contracts/auth/auth.paths.ts`), base `API_URL`:
-  - credentials `POST /api/auth/login` `{ email, password }` → `{ userId, email, accessToken, refreshToken }`
-  - Google `POST /api/auth/sync` `{ provider: "google", idToken }`
-  - refresh `POST /api/auth/refresh` `{ userId, refreshToken }`
-- Session storage key `zenwayro.auth.session` via `createLocalStorageAdapter`.
-- Query defaults from the Next app: `staleTime: 0`, `gcTime: 0`, `refetchOnWindowFocus: false`, retry while `failureCount < 1` and status is not 401.
-- Middleware (`frontend/src/middleware.ts`) sends anonymous users to `/`, not `/auth/signin`. `ProtectedRoute` uses `redirectTo="/"`.
+## Module order
 
-## Public vs protected paths
-
-Public exact: `/`, `/terms`, `/privacy`, `/contact`, `/cookies`, `/explore`, `/quiz`, `/auth`.
-Public prefixes: `/auth/`, `/plan/shared/`, `/popular-trips`, `/plan/`.
-Everything else (trips, settings, admin) is protected. `/plan/*` is public at the edge today; page-level auth comes with the plan module.
-
-## Module sequence
-
-| # | Module | React today | Grainlet target | Depends on | Risk | Status |
-|---|--------|-------------|-----------------|------------|------|--------|
-| 1 | Foundation | `layout.tsx`, `Providers`, middleware path gate | Vite bootstrap, auth/i18n/query clients, flat `Router`, placeholder routes, shell nav | — | medium | done |
-| 2 | API client | `src/lib/api` + `contracts/` | plain `src/api` fetch client + copied path/type contracts | 1 | low | done |
-| 3 | Chrome + tokens | `AppChrome`, `Navbar`, `Footer`, `design-system/tokens` | shell layout + copied CSS variables; Radix primitives later | 1 | high | not started |
-| 4 | Auth pages | `app/auth/*`, `useSignInForm` etc. | `grainlet/forms` + `session.signIn` | 1–2 | high | not started |
-| 5 | Legal | contact, cookies, privacy, terms | static routes using copied copy | 1, 3 | low | not started |
-| 6 | Home | RSC `page.tsx` + `HomePageV2` | client page; `useQuery` popular-trips preview | 2, 3 | medium | not started |
-| 7 | Explore | map, infinite POIs | `useInfiniteQuery` + maplibre (not React) | 2, 3 | high | not started |
-| 8 | Quiz | `QuizFlow` | signals + forms | 2, 4 | medium | not started |
-| 9 | Trips | protected list | `ProtectedRoute` + `useQuery` | 2, 4 | medium | not started |
-| 10 | Popular trips | ISR + slug routes | client routes first; SSR later | 2, 3 | high | not started |
-| 11 | Plan | map, dnd, mutations, wizard | `grainlet/store` + query + map | 2, 4, 7 | very high | not started |
-| 12 | Settings | protected forms | forms + session | 4 | medium | not started |
-| 13 | Admin | CRUD pages | query + forms, role gate | 2, 4 | high | not started |
-| 14 | Notifications | `NotificationsProvider` | query + signals | 2, 4 | medium | not started |
-| 15 | SEO / pixels / Next API | metadata, sitemap, analytics | `grainlet/ssr` follow-up; not part of the SPA cutover | 6, 10 | high | not started |
-
-Wire TypeScript types remain in `frontend/src/lib/api/contracts` until a feature module needs them.
+Chrome and legal/auth/home can land together because they own separate directories. Explore, plan, and popular trips own maps and must not edit each other's files. `App.jsx` is wired by the lead after each module exports its page components.
 
 ## Verification
 
-Per module: `node --test` for pure helpers, `npm run build` in `apps/zenwayro-web`, then browser on port 5174 (navigate, not a single screenshot). Next app tests stay in `frontend/` (`npm test` there) and are not the Grainlet suite.
-
-## Out of scope for every module
-
-Do not edit `frontend/`, repo-root `vite.config.js`, `package-lock.json`, `apps/zenwayro/**`, `apps/bench`, `apps/examples`, or `packages/create-grainlet`. Do not commit.
+`npm test` and `npm run build` in `apps/zenwayro-web`. Browser: every route family, loading/error/empty, and one mutation path. Dev server port 5174.

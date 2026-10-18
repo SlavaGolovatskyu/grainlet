@@ -1,0 +1,73 @@
+/**
+ * Semantic design tokens — light/dark values only.
+ * Mapped to Tailwind utilities via @theme inline in globals.css.
+ */
+:root {
+  --ds-surface: #ffffff;
+  --ds-surface-elevated: #f9fafb;
+  --ds-surface-muted: #f3f4f6;
+  --ds-border: #e5e7eb;
+  --ds-border-strong: #d1d5db;
+  --ds-text-primary: #111827;
+  --ds-text-secondary: #4b5563;
+  --ds-text-muted: #6b7280;
+  --ds-text-inverse: #ffffff;
+  --ds-accent: #4f46e5;
+  --ds-accent-hover: #4338ca;
+  --ds-accent-muted: #eef2ff;
+  --ds-accent-foreground: #ffffff;
+  --ds-danger: #dc2626;
+  --ds-danger-hover: #b91c1c;
+  --ds-danger-foreground: #ffffff;
+  --ds-success: #16a34a;
+  --ds-ring: #6366f1;
+  --ds-radius-sm: 0.375rem;
+  --ds-radius-md: 0.5rem;
+  --ds-radius-lg: 0.75rem;
+  --ds-radius-xl: 1rem;
+  --ds-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --ds-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --ds-shadow-accent: 0 10px 15px -3px rgb(79 70 229 / 0.25);
+  --ds-font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ds-font-size-xs: 0.75rem;
+  --ds-font-size-sm: 0.875rem;
+  --ds-font-size-base: 1rem;
+  --ds-font-size-lg: 1.125rem;
+  --ds-font-size-xl: 1.25rem;
+  --ds-font-size-2xl: 1.5rem;
+  --ds-font-size-3xl: 1.875rem;
+  --ds-font-size-4xl: 2.25rem;
+  --ds-font-size-5xl: 3rem;
+  --ds-line-height-tight: 1.25;
+  --ds-line-height-normal: 1.5;
+  --ds-line-height-relaxed: 1.625;
+  --ds-spacing-page-x: 1rem;
+  --ds-spacing-page-y: 1.5rem;
+  --ds-content-max-width: 64rem;
+  --ds-content-narrow: 24rem;
+  --ds-nav-height: 3.5rem;
+}
+
+.dark {
+  --ds-surface: #030712;
+  --ds-surface-elevated: #111827;
+  --ds-surface-muted: #1f2937;
+  --ds-border: #1f2937;
+  --ds-border-strong: #374151;
+  --ds-text-primary: #f9fafb;
+  --ds-text-secondary: #d1d5db;
+  --ds-text-muted: #9ca3af;
+  --ds-text-inverse: #111827;
+  --ds-accent: #818cf8;
+  --ds-accent-hover: #a5b4fc;
+  --ds-accent-muted: #1e1b4b;
+  --ds-accent-foreground: #111827;
+  --ds-danger: #ef4444;
+  --ds-danger-hover: #f87171;
+  --ds-danger-foreground: #ffffff;
+  --ds-success: #22c55e;
+  --ds-ring: #818cf8;
+  --ds-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --ds-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --ds-shadow-accent: 0 10px 15px -3px rgb(129 140 248 / 0.2);
+}

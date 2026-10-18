@@ -7,15 +7,20 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test test/**/*.test.mjs"
+    "test": "node --test test/**/*.test.mjs src/pages/explore/test/**/*.test.mjs"
   },
   "dependencies": {
-    "grainlet": "*"
+    "grainlet": "*",
+    "maplibre-gl": "^5.24.0",
+    "pmtiles": "^4.4.1"
   },
   "devDependencies": {
     "@babel/core": "^7.23.0",
     "@babel/plugin-syntax-jsx": "^7.23.0",
+    "@tailwindcss/vite": "^4.3.3",
     "grainlet-vite": "^1.0.3",
+    "tailwindcss": "^4.3.0",
+    "tailwindcss-animate": "^1.0.7",
     "vite": "^5.0.0"
   }
 }

@@ -52,3 +52,56 @@ html.dark body {
 html.dark .header {
   border-bottom-color: #334155;
 }
+
+.signin {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 24rem;
+}
+
+.signin-form,
+.signin-field,
+.signin-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.signin-field,
+.signin-aside {
+  gap: 0.25rem;
+}
+
+.signin-notice,
+.signin-divider,
+.signin-hint,
+.signin-footer,
+.signin-error {
+  margin: 0;
+}
+
+.signin input,
+.signin-google,
+.signin-form button[type='submit'] {
+  box-sizing: border-box;
+  width: 100%;
+  font: inherit;
+}
+
+.signin input {
+  padding: 0.5rem 0.75rem;
+}
+
+.signin button:disabled {
+  opacity: 0.6;
+}
+
+.signin-error {
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+
+html.dark .signin-error {
+  color: #fca5a5;
+}
