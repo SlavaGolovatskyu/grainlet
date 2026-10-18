@@ -1,0 +1,12 @@
+export { AUTH_PATHS } from './auth.js';
+export { USERS_PATHS } from './users.js';
+export { POI_PATHS } from './poi.js';
+export { PLACE_ENGAGEMENT_PATHS } from './place-engagement.js';
+export { ROUTING_PATHS } from './routing.js';
+export { TRIP_PATHS } from './trip.js';
+export { POPULAR_TRIP_PATHS } from './popular-trip.js';
+export { QUIZ_PATHS } from './quiz.js';
+export { NOTIFICATION_PATHS } from './notification.js';
+export { IMAGE_PATHS } from './images.js';
+export { ADMIN_PATHS } from './admin.js';
+export { ENTITY_REGISTRY_PATHS } from './entity-registry.js';
