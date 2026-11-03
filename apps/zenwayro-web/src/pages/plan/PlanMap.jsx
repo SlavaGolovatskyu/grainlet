@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup, onMount } from 'grainlet';
+import { createEffect, createSignal, onCleanup } from 'grainlet';
 import maplibregl from 'maplibre-gl';
 import { Protocol } from 'pmtiles';
 
@@ -109,9 +109,9 @@ function fitPlaces(map, places, route) {
 }
 
 export function PlanMap(props) {
-  let host;
   let map;
   const markers = [];
+  const [host, setHost] = createSignal(null);
   const [ready, setReady] = createSignal(false);
   let fittedKey = '';
 
@@ -119,11 +119,13 @@ export function PlanMap(props) {
     while (markers.length) markers.pop().remove();
   }
 
-  onMount(() => {
-    if (!host) return undefined;
+  createEffect(() => {
+    const container = host();
+    if (!container) return;
+
     ensurePmtilesProtocol();
     map = new maplibregl.Map({
-      container: host,
+      container,
       style: mapStyleUrl(),
       center: DEFAULT_CENTER,
       zoom: 6,
@@ -138,10 +140,10 @@ export function PlanMap(props) {
 
     onCleanup(() => {
       clearMarkers();
-      map.remove();
+      map?.remove();
+      map = null;
       setReady(false);
     });
-    return undefined;
   });
 
   createEffect(() => {
@@ -173,7 +175,9 @@ export function PlanMap(props) {
 
   return (
     <div
-      ref={host}
+      ref={(node) => {
+        if (node) setHost(node);
+      }}
       class="map-view-raise-bottom-controls absolute inset-0 h-full w-full"
     />
   );

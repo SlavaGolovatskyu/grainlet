@@ -1,0 +1,57 @@
+---
+description: Grainlet auth-sdk — Google/Apple/GitHub browser helpers (examples)
+alwaysApply: false
+---
+
+# Grainlet auth-sdk (`grainlet/auth-sdk`)
+
+Use when you need browser SDK loading / popups. Wire tokens into `grainlet/auth` providers. Prefer custom `authorize` if your API is not the SDK defaults.
+
+```js
+import {
+  createAuthSdk, AuthSdkError, loadScript,
+  getGoogleIdToken, GoogleSignIn,
+  getAppleCredential, AppleSignIn,
+  getGitHubAuthorization, completeGitHubSignIn, GitHubSignIn,
+  GITHUB_CALLBACK_MESSAGE,
+  createOAuthState, openCenteredPopup, waitForPopupMessage,
+} from 'grainlet/auth-sdk';
+```
+
+```js
+// Full SDK (expects backend routes matching auth-sdk defaults)
+const sdk = createAuthSdk({ google: { clientId }, apple: { clientId }, github: { clientId } });
+await sdk.signInWithGoogle(); // posts to default /api/auth/google unless customized
+
+// Google — custom backend (recommended when API differs)
+const idToken = await getGoogleIdToken({ clientId: GOOGLE_CLIENT_ID });
+// or: await GoogleSignIn({ clientId }) → { idToken, ... }
+
+// Apple
+const apple = await getAppleCredential({ clientId, redirectURI });
+// or: await AppleSignIn({ clientId, redirectURI })
+
+// GitHub popup flow
+const { code, state } = await getGitHubAuthorization({ clientId });
+await completeGitHubSignIn({ code, state }); // or GitHubSignIn({ clientId })
+// popup page posts: { type: GITHUB_CALLBACK_MESSAGE, ... }
+```
+
+```js
+await loadScript('https://accounts.google.com/gsi/client');
+const state = createOAuthState();
+const popup = openCenteredPopup(url, 'oauth');
+const message = await waitForPopupMessage(popup, { type: GITHUB_CALLBACK_MESSAGE });
+
+try {
+  await getGoogleIdToken({ clientId });
+} catch (e) {
+  if (e instanceof AuthSdkError) console.error(e.code);
+}
+```
+
+```js
+// Bad — createAuthSdk when backend body/path is custom (e.g. /api/auth/sync)
+await createAuthSdk({ google: { clientId } }).signInWithGoogle();
+// Good — getGoogleIdToken + Google({ getIdToken, authorize }) in grainlet/auth
+```

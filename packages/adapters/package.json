@@ -1,6 +1,6 @@
 {
   "name": "grainlet-adapters",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Deploy Grainlet SSR apps to Vercel, Cloudflare, and other Web-standard runtimes",
   "type": "module",
   "license": "MIT",
@@ -48,7 +48,7 @@
     "test": "node test/handlers.test.mjs && node test/output.test.mjs"
   },
   "peerDependencies": {
-    "grainlet": "^1.1.0",
+    "grainlet": "^1.1.11",
     "vite": ">=5.0.0"
   },
   "devDependencies": {

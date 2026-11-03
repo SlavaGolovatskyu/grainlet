@@ -233,7 +233,7 @@
     "googleSignInFailed": "Google sign-in failed. Please try again.",
     "googleSignInBackendSyncFailed": "Google sign-in succeeded but we could not connect to the server. Ensure the backend is running and GOOGLE_CLIENT_ID is configured.",
     "googleSignInNoIdToken": "Google sign-in did not return a valid identity token. Please try again.",
-    "googleSignInConfigError": "Google sign-in is misconfigured. Check GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and NEXTAUTH_SECRET.",
+    "googleSignInConfigError": "Google sign-in is misconfigured. Check VITE_GOOGLE_CLIENT_ID and Authorized JavaScript origins for http://localhost:3000 in Google Cloud Console.",
     "passwordsDoNotMatch": "Passwords do not match",
     "alreadyHaveAccount": "Already have an account?",
     "dontHaveAccount": "Don't have an account?",

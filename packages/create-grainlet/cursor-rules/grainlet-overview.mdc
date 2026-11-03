@@ -1,0 +1,37 @@
+---
+description: Grainlet module map, subpath imports, and provider order
+alwaysApply: true
+---
+
+# Grainlet overview
+
+Import **only** from the listed subpaths. Never pull route/forms/auth/auth-sdk/i18n/query/store/ssr/testing/devtools/utils from `grainlet`.
+
+| Import from | Typical APIs |
+|-------------|--------------|
+| `grainlet` | signals, `render`/`hydrate`, `Show`/`For`/`Suspense`, `createResource`/`lazy` |
+| `grainlet/route` | `Router`/`Route`/`Link`/`navigate`/`useParams` |
+| `grainlet/forms` | `FormProvider`/`Field`/`rules`/`required` |
+| `grainlet/auth` | `createAuth`/`AuthProvider`/`useSession`/`ProtectedRoute` |
+| `grainlet/auth-sdk` | `getGoogleIdToken`/`GoogleSignIn`/`createAuthSdk` |
+| `grainlet/i18n` | `createI18n`/`I18nProvider`/`useTranslation` |
+| `grainlet/query` | `QueryClient`/`useQuery`/`useMutation` |
+| `grainlet/store` | `createStore`/`produce`/`reconcile` |
+| `grainlet/utils` | path/object/guards/async helpers |
+| `grainlet/ssr` | `renderToString*`/`Head`/`createNodeHandler` |
+| `grainlet/testing` | `render`/`screen`/`fireEvent`/`waitFor` |
+| `grainlet/devtools` | `installDevtoolsHook`/`GrainletDevtools` |
+
+Provider order: **Auth → I18n → Query → Router**.
+
+```js
+// Good
+import { createSignal, Show } from 'grainlet';
+import { useSession } from 'grainlet/auth';
+import { useQuery } from 'grainlet/query';
+
+// Bad — modules are not on the root entry
+import { useSession, useQuery, Router } from 'grainlet';
+```
+
+Not React: no `useState` / `useMemo` / `useCallback` by default. Signals are accessors (`count()`). In JSX write `{count()}` — `grainlet-vite` wraps call expressions.

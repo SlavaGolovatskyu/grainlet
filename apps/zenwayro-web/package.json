@@ -10,7 +10,7 @@
     "test": "node --test test/**/*.test.mjs src/pages/explore/test/**/*.test.mjs"
   },
   "dependencies": {
-    "grainlet": "*",
+    "grainlet": "1.1.1",
     "maplibre-gl": "^5.24.0",
     "pmtiles": "^4.4.1"
   },

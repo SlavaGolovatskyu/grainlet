@@ -7,7 +7,8 @@ coverage/
 frontend
 apps/zenwayro
 ./frontend
-./apps/zenwayro
-./apps/zenwayro/
+apps/zenwayro-web/.env.example
+apps/zenwayro-web/.env.local
+.VSCodeCounter/
 .env
 .cursor

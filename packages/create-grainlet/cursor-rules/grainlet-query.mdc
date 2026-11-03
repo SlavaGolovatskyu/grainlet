@@ -1,0 +1,103 @@
+---
+description: Grainlet query imports — QueryClient, useQuery, mutations (examples)
+alwaysApply: false
+---
+
+# Grainlet query (`grainlet/query`)
+
+```js
+import {
+  QueryClient, QueryClientProvider, QueryCache, MutationCache, Query, Mutation,
+  useQueryClient, useQuery, useQueries, useInfiniteQuery,
+  useSuspenseQuery, useSuspenseQueries, useSuspenseInfiniteQuery,
+  useMutation, useMutationState, useIsFetching, useIsMutating,
+  usePrefetchQuery, usePrefetchInfiniteQuery,
+  QueryErrorResetBoundary, useQueryErrorResetBoundary,
+  HydrationBoundary, IsRestoringProvider, useIsRestoring,
+  QueryClientContext, QueryErrorResetBoundaryContext, IsRestoringContext,
+  focusManager, onlineManager, hashKey, partialMatchKey, replaceEqualDeep,
+  dehydrate, hydrate, queryOptions, infiniteQueryOptions, mutationOptions,
+  keepPreviousData, skipToken, defaultShouldDehydrateQuery, defaultShouldDehydrateMutation,
+} from 'grainlet/query';
+```
+
+```js
+const client = new QueryClient({
+  defaultOptions: { queries: { staleTime: 30_000, retry: 2 } },
+});
+client.getQueryCache(); // QueryCache
+client.getMutationCache(); // MutationCache
+```
+
+```jsx
+<QueryClientProvider client={client}><App /></QueryClientProvider>
+
+const todo = useQuery(() => ({
+  queryKey: ['todo', id()],
+  queryFn: ({ signal }) => fetch(`/api/todos/${id()}`, { signal }).then((r) => r.json()),
+  enabled: id() != null,
+  placeholderData: keepPreviousData,
+}));
+// accessors: todo.data(), todo.isPending(), todo.isFetching(), todo.error()
+// methods: todo.refetch()
+
+useQueries({ queries: [{ queryKey: ['a'], queryFn: fetchA }, { queryKey: ['b'], queryFn: fetchB }] });
+
+const posts = useInfiniteQuery(() => ({
+  queryKey: ['posts'],
+  initialPageParam: 0,
+  queryFn: ({ pageParam, signal }) => fetchPage(pageParam, signal),
+  getNextPageParam: (last) => last.next,
+}));
+posts.fetchNextPage(); posts.hasNextPage();
+
+useSuspenseQuery({ queryKey: ['x'], queryFn: fetchX });
+useSuspenseQueries({ queries: [...] });
+useSuspenseInfiniteQuery({ ... });
+
+const save = useMutation({
+  mutationFn: updateTodo,
+  onSuccess: () => client.invalidateQueries({ queryKey: ['todo'] }),
+});
+save.mutate(vars); await save.mutateAsync(vars); save.isPending();
+
+useIsFetching(); useIsMutating({ mutationKey: ['save'] });
+useMutationState({ filters: { mutationKey: ['save'] }, select: (m) => m.state.variables });
+usePrefetchQuery({ queryKey: ['todo', 1], queryFn: fetchTodo });
+usePrefetchInfiniteQuery({ queryKey: ['posts'], ... });
+```
+
+```jsx
+<QueryErrorResetBoundary>
+  {({ reset }) => (
+    <ErrorBoundary fallback={(e, r) => <button onClick={() => { reset(); r(); }}>Retry</button>}>
+      <Page />
+    </ErrorBoundary>
+  )}
+</QueryErrorResetBoundary>
+useQueryErrorResetBoundary();
+
+<HydrationBoundary state={dehydrated}><App /></HydrationBoundary>
+<IsRestoringProvider value={true}>{children}</IsRestoringProvider>
+useIsRestoring();
+useQueryClient(); // or useContext(QueryClientContext)
+```
+
+```js
+hashKey(['todo', 1]); partialMatchKey(['todo'], ['todo', 1]);
+replaceEqualDeep(prev, next);
+const state = dehydrate(client); hydrate(client, state);
+queryOptions({ queryKey: ['x'], queryFn });
+infiniteQueryOptions({ queryKey: ['p'], initialPageParam: 0, queryFn, getNextPageParam });
+mutationOptions({ mutationFn });
+skipToken; // disable queryFn without enabled:false tricks
+defaultShouldDehydrateQuery(q); defaultShouldDehydrateMutation(m);
+focusManager.setFocused(true); onlineManager.setOnline(true);
+```
+
+```js
+// Bad
+todo.isPending; todo.data.title
+// Good
+todo.isPending(); todo.data()?.title
+```

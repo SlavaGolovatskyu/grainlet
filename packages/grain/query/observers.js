@@ -21,6 +21,37 @@ function enabled(options, query) {
     : options.enabled !== false;
 }
 
+/**
+ * Decide whether an observer options sync should kick off a fetch.
+ *
+ * Mount / query-key change: fetch like TanStack (pending, stale success, always).
+ * Same-query options sync (e.g. re-render after notify): only fetch when
+ * invalidated or enabled flipped on — never because a settled error left
+ * `data === undefined`, or because `staleTime: 0` makes success look stale.
+ * Without this guard, every error/success notify → bump → re-render →
+ * setOptionsInput → update → fetch loops forever.
+ */
+function shouldFetchOnUpdate(query, options, { queryChanged, enabledJustTurnedOn }) {
+  if (!enabled(options, query) || options.subscribed === false) return false;
+  if (query.state.fetchStatus !== 'idle') return false;
+
+  // Invalidation and enabled false→true always warrant a fetch (including errors).
+  if (query.state.isInvalidated || enabledJustTurnedOn) return true;
+
+  if (!queryChanged) return false;
+
+  if (query.state.status === 'error') {
+    // Remount onto a cached error: only refetch when explicitly always.
+    return options.refetchOnMount === 'always';
+  }
+
+  return (
+    query.state.data === undefined
+    || options.refetchOnMount === 'always'
+    || (query.isStale() && options.refetchOnMount !== false)
+  );
+}
+
 export class QueryObserver {
   constructor(client, optionsInput, config = {}) {
     this.client = client;
@@ -54,6 +85,8 @@ export class QueryObserver {
     });
     const query = this.client.getQueryCache().build(this.client, resolved);
     const changed = query !== this.query;
+    const wasEnabled = this.options ? enabled(this.options, this.query) : false;
+    const nowEnabled = enabled(resolved, query);
     this.options = resolved;
     if (changed) {
       if (this.query && this.unsubscribe) {
@@ -71,12 +104,10 @@ export class QueryObserver {
       else query.removeObserver(this.unsubscribe);
     }
     this.updateInterval();
-    const shouldFetch = enabled(resolved, query)
-      && resolved.subscribed !== false
-      && (query.state.data === undefined
-        || resolved.refetchOnMount === 'always'
-        || (query.isStale() && resolved.refetchOnMount !== false));
-    if (shouldFetch && query.state.fetchStatus === 'idle') {
+    if (shouldFetchOnUpdate(query, resolved, {
+      queryChanged: changed,
+      enabledJustTurnedOn: !wasEnabled && nowEnabled,
+    })) {
       query.fetch(resolved).catch(() => {});
     }
   }
@@ -225,6 +256,7 @@ export class QueriesObserver {
   }
 
   rebuild(input, shouldNotify = true) {
+    const previousEntries = this.entries.slice();
     this.clear();
     const queries = typeof input.queries === 'function'
       ? input.queries()
@@ -249,13 +281,15 @@ export class QueriesObserver {
         version: this.version,
       });
       nextResults.push(observer.result());
+      const prev = previousEntries.find((entry) => entry.query === query);
       this.entries.push({ listener, options, query });
-      if (enabled(options, query)
-        && options.subscribed !== false
-        && (query.state.data === undefined
-          || options.refetchOnMount === 'always'
-          || (query.isStale() && options.refetchOnMount !== false))
-        && query.state.fetchStatus === 'idle') {
+      // rebuild() clears observers then re-attaches; treat as a soft remount
+      // only when this query was not already tracked, otherwise same-query
+      // notify → bump → rebuild would refetch forever on errors / staleTime 0.
+      if (shouldFetchOnUpdate(query, options, {
+        queryChanged: !prev,
+        enabledJustTurnedOn: Boolean(prev) && !enabled(prev.options, query) && enabled(options, query),
+      })) {
         query.fetch(options).catch(() => {});
       }
     }

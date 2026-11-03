@@ -1,0 +1,53 @@
+---
+description: Grainlet i18n imports — createI18n, useTranslation (examples)
+alwaysApply: false
+---
+
+# Grainlet i18n (`grainlet/i18n`)
+
+```js
+import {
+  createI18n, I18nProvider, I18nContext, useI18n, useTranslation,
+  getTranslation, interpolate, translate,
+} from 'grainlet/i18n';
+```
+
+```js
+const i18n = createI18n({
+  locale: 'en',
+  fallbackLocale: 'en',
+  resources: {
+    en: { common: { hello: 'Hello, {name}' }, auth: { title: 'Sign in' } },
+    es: { common: { hello: 'Hola, {name}' }, auth: { title: 'Entrar' } },
+  },
+});
+i18n.locale();           // accessor
+i18n.setLocale('es');
+i18n.t('common', 'hello', { name: 'Ada' });
+```
+
+```jsx
+<I18nProvider client={i18n}><App /></I18nProvider>
+// or <I18nProvider config={{ locale: 'en', resources }} />
+
+function Title() {
+  const { t, locale, setLocale } = useTranslation('auth');
+  // t('title') relative to namespace; locale() / setLocale('en')
+  return <h1>{t('title')}</h1>; // Vite wraps call expressions
+}
+
+const i18n = useI18n(); // or useContext(I18nContext)
+```
+
+```js
+getTranslation(dict, 'actions.save');          // nested path
+interpolate('Hi {name}', { name: 'Ada' });     // {name} not {{name}}
+translate(dict, 'hello', { name: 'Ada' });
+```
+
+```js
+// Bad
+"Hello {{name}}"           // wrong interpolation
+{() => t('title')}         // redundant in JSX — write {t('title')}
+required(t('required'))    // frozen string — use required(() => t('required'))
+```

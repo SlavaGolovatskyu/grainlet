@@ -228,7 +228,8 @@ function mountRow(parentEl, owner, key, item, index, render, needsIndex) {
     if (typeof row.render !== 'function') {
       vnode = row.render;
     } else if (row.needsIndex) {
-      vnode = row.render(current, row.getIndex());
+      // Pass the index accessor (Solid-style), not its current value.
+      vnode = row.render(current, row.getIndex);
     } else {
       vnode = row.render(current);
     }
@@ -368,7 +369,8 @@ export function mapKeyedVnodes(items, keyed, render, options = {}) {
     if (typeof render !== 'function') {
       vnode = render;
     } else if (render.length > 1) {
-      vnode = render(item, index);
+      // SSR has no reactive index signal; expose a stable constant accessor.
+      vnode = render(item, () => index);
     } else {
       vnode = render(item);
     }

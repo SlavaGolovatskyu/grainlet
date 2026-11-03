@@ -5,7 +5,12 @@ import { Link } from 'grainlet/route';
 import { apiClient, POPULAR_TRIP_PATHS } from '../../api.js';
 import { translateApp } from '../../i18n.js';
 import { ROUTE_POPULAR_TRIPS } from '../../routes.js';
-import { asArray, routePopularTripsCountry } from './popular-routes.js';
+import {
+  asArray,
+  POPULAR_TRIPS_GC_MS,
+  POPULAR_TRIPS_STALE_MS,
+  routePopularTripsCountry,
+} from './popular-routes.js';
 
 export function PopularBrowsePage() {
   const i18n = useI18n();
@@ -15,6 +20,8 @@ export function PopularBrowsePage() {
     queryKey: ['popular-trips', 'directory-countries'],
     queryFn: ({ signal }) =>
       apiClient.get(POPULAR_TRIP_PATHS.directoryCountries, { signal }),
+    staleTime: POPULAR_TRIPS_STALE_MS,
+    gcTime: POPULAR_TRIPS_GC_MS,
   }));
 
   const countries = () => asArray(countriesQuery.data());
@@ -24,8 +31,9 @@ export function PopularBrowsePage() {
     if (!needle) return list;
     return list.filter((entry) => String(entry.country ?? '').toLowerCase().includes(needle));
   };
-  const loading = () => countriesQuery.data() == null && !countriesQuery.isError();
-  const failed = () => countriesQuery.data() == null && countriesQuery.isError();
+  const loading = () =>
+    countriesQuery.isLoading() || (countriesQuery.isPending() && !countriesQuery.isFetched());
+  const failed = () => countriesQuery.isError();
 
   return (
     <div class="zenwayro-v2-ui mx-auto max-w-5xl px-4 py-8 sm:px-6">

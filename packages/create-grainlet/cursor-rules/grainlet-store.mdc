@@ -1,0 +1,45 @@
+---
+description: Grainlet store — createStore, produce, reconcile (examples)
+alwaysApply: false
+---
+
+# Grainlet store (`grainlet/store`)
+
+Reactive deep store (proxy). Prefer signals for local UI; use a store for nested document state.
+
+```js
+import { createStore, produce, reconcile, STORE_RAW } from 'grainlet/store';
+```
+
+```js
+const [doc, setDoc] = createStore({
+  title: 'Draft',
+  items: [{ id: 1, text: 'a' }],
+});
+
+doc.title;              // tracked read (proxy)
+setDoc('title', 'New'); // path set
+setDoc('items', 0, 'text', 'b');
+setDoc({ title: 'X' }); // merge top-level keys
+setDoc((state) => ({ ...state, title: 'Y' })); // replace via updater
+
+setDoc(produce((draft) => {
+  draft.items.push({ id: 2, text: 'c' });
+}));
+
+setDoc(reconcile({ title: 'Z', items: [] })); // structural share
+
+const raw = doc[STORE_RAW]; // underlying object (advanced)
+```
+
+```jsx
+function Editor() {
+  const [doc, setDoc] = createStore({ text: '' });
+  return (
+    <textarea
+      value={doc.text}
+      onInput={(e) => setDoc('text', e.target.value)}
+    />
+  );
+}
+```

@@ -10,6 +10,8 @@ import {
   DURATION_CHIPS,
   POPULAR_TRIPS_DEFAULT_SORT,
   POPULAR_TRIPS_FIRST_PAGE,
+  POPULAR_TRIPS_GC_MS,
+  POPULAR_TRIPS_STALE_MS,
   POPULAR_TRIP_SORT_VALUES,
   RATING_CHIPS,
   asArray,
@@ -70,6 +72,8 @@ export function PopularTripsPage() {
     queryKey: ['popular-trips', 'directory-countries'],
     queryFn: ({ signal }) =>
       apiClient.get(POPULAR_TRIP_PATHS.directoryCountries, { signal }),
+    staleTime: POPULAR_TRIPS_STALE_MS,
+    gcTime: POPULAR_TRIPS_GC_MS,
   }));
 
   const tripsQuery = useQuery(() => {
@@ -79,10 +83,22 @@ export function PopularTripsPage() {
       page: page(),
       ...filters,
     });
+    // Primitive key parts (same shape as Next usePopularTrips) — avoid embedding a
+    // fresh params object identity into the key tuple for readability/debugging.
     return {
-      queryKey: ['popular-trips', params],
+      queryKey: [
+        'popular-trips',
+        params.sort,
+        params.page,
+        params.limit,
+        params.minDurationDays ?? null,
+        params.maxDurationDays ?? null,
+        params.minRating ?? null,
+      ],
       queryFn: ({ signal }) =>
         apiClient.get(POPULAR_TRIP_PATHS.root, { params, signal }),
+      staleTime: POPULAR_TRIPS_STALE_MS,
+      gcTime: POPULAR_TRIPS_GC_MS,
     };
   });
 
@@ -92,8 +108,8 @@ export function PopularTripsPage() {
   const cityLinks = () => uniqueCityLinks(items());
   const totalPages = () => Number(tripsQuery.data()?.totalPages ?? 0);
   const pageItems = () => popularTripsPageNumbers(page(), totalPages());
-  const loading = () => tripsQuery.data() == null && !tripsQuery.isError();
-  const failed = () => tripsQuery.data() == null && tripsQuery.isError();
+  const loading = () => tripsQuery.isLoading() || (tripsQuery.isPending() && !tripsQuery.isFetched());
+  const failed = () => tripsQuery.isError();
 
   function resetPage() {
     setPage(POPULAR_TRIPS_FIRST_PAGE);

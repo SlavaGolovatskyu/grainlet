@@ -7,6 +7,7 @@ import { AUTH_PATHS, apiClient } from '../../api.js';
 import { translateApp } from '../../i18n.js';
 import { ROUTE_AUTH_SIGNIN, routeAuthVerifyPendingWithEmail } from '../../routes.js';
 import { AuthCard, AuthField, AuthSubmitButton } from './AuthCard.jsx';
+import { ContinueWithGoogleButton } from './ContinueWithGoogleButton.jsx';
 import {
   buildRegisterPayload,
   googleSignInErrorMessage,
@@ -71,14 +72,9 @@ export function SignUpPage() {
 
   return (
     <AuthCard title={t('auth.signUpTitle')}>
-      <button
-        type="button"
-        class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-secondary px-8 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/80 disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={googleBusy()}
-        onClick={handleGoogle}
-      >
+      <ContinueWithGoogleButton disabled={googleBusy()} onClick={handleGoogle}>
         {t('auth.continueWithGoogle')}
-      </button>
+      </ContinueWithGoogleButton>
       <div class="relative">
         <div class="absolute inset-0 flex items-center">
           <div class="w-full border-t border-gray-300 dark:border-gray-700" />

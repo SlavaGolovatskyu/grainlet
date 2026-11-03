@@ -33,10 +33,13 @@ export default defineConfig({
   optimizeDeps: {
     exclude: [
       'grainlet',
+      'grainlet/auth',
+      'grainlet/auth-sdk',
       'grainlet/forms',
       'grainlet/i18n',
       'grainlet/route',
       'grainlet/query',
+      'grainlet/devtools',
     ],
   },
   resolve: {

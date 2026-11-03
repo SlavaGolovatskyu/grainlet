@@ -1,0 +1,87 @@
+---
+description: Grainlet route imports — Router, Link, navigate, nested/SSR helpers (examples)
+alwaysApply: false
+---
+
+# Grainlet route (`grainlet/route`)
+
+```js
+import {
+  Router, Route, Link, Outlet, navigate, setNavigateBasename, getNavigateBasename,
+  useLocation, useParams, useMatches, useOutletContext, useSearchParams,
+  useRouteLoaderData, useRouteActionData, useRouteError,
+  useNavigation, useSubmit, submitRoute, redirect,
+  RouteHydrationBoundary, dehydrateRouteState, hydrateRouteState, hydrateRouterState,
+  queryLoader, prepareRoutes, renderRoute, renderRouteDocument, renderRouteToReadableStream,
+  renderNestedBranch, routesFromChildren,
+  matchPath, matchRouteBranch, matchRoutes, flattenRoutes, joinPaths,
+  getLocationSignal, readLocation,
+} from 'grainlet/route';
+```
+
+## Flat SPA (default)
+
+```jsx
+setNavigateBasename('/app');
+getNavigateBasename(); // '/app'
+
+<Router basename="/app">
+  <Route path="/" component={Home} />
+  <Route path="/todos/:id" component={Todo} />
+</Router>
+
+<Link href="/todos/1">Open</Link>
+navigate('/todos/1'); navigate('/x', { replace: true });
+
+const loc = useLocation(); // loc().pathname / .search
+const params = useParams(); // params().id
+const [search, setSearch] = useSearchParams();
+```
+
+## Nested / data router (opt-in)
+
+```jsx
+<Router mode="nested" queryClient={queryClient} hydrationState={routeState}>
+  <Route element={Layout}>
+    <Route
+      path="projects/:id"
+      id="project"
+      component={Project}
+      loader={({ params }) => fetch(`/api/projects/${params.id}`).then((r) => r.json())}
+      action={async ({ request }) => { /* … */ return redirect('/projects'); }}
+    />
+  </Route>
+</Router>
+
+function Layout() {
+  return <main><Outlet context={{ theme: 'dark' }} /></main>;
+}
+useOutletContext(); useMatches();
+useRouteLoaderData(); useRouteActionData(); useRouteError();
+useNavigation(); const submit = useSubmit();
+submit(formData, { method: 'post' }); submitRoute(...);
+redirect('/login');
+queryLoader({ queryKey: ['p', id], queryFn: fetchP });
+```
+
+## Matching / SSR helpers
+
+```js
+matchPath('/todos/:id', '/todos/1');
+matchRoutes(routes, '/todos/1'); matchRouteBranch(...); flattenRoutes(routes);
+joinPaths('/app', 'todos');
+getLocationSignal(); readLocation();
+routesFromChildren(children); renderNestedBranch(...);
+
+const prepared = await prepareRoutes({ App, routes, url, queryClient });
+await renderRoute(...); await renderRouteDocument(...);
+renderRouteToReadableStream(...);
+const state = dehydrateRouteState(...);
+hydrateRouteState(state); hydrateRouterState(state, queryClient);
+<RouteHydrationBoundary state={state}><App /></RouteHydrationBoundary>
+```
+
+```jsx
+// Bad for a simple SPA
+<Router mode="nested">…</Router>
+```

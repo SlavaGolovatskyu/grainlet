@@ -1,0 +1,37 @@
+---
+description: Grainlet devtools — installDevtoolsHook, GrainletDevtools (examples)
+alwaysApply: false
+---
+
+# Grainlet devtools (`grainlet/devtools`)
+
+DEV only. Install the hook **before** app signals are created; mount the panel under providers.
+
+```js
+import {
+  installDevtoolsHook, getDevtoolsHook,
+  GrainletDevtools, QueryDevtools,
+} from 'grainlet/devtools';
+```
+
+```js
+if (import.meta.env.DEV) {
+  installDevtoolsHook();
+}
+const hook = getDevtoolsHook();
+hook?.getSnapshot(); // recent signal/effect events
+hook?.subscribe((record) => console.log(record));
+```
+
+```jsx
+{import.meta.env.DEV ? (
+  <GrainletDevtools queryClient={queryClient} />
+) : null}
+
+// Queries only
+<QueryDevtools client={queryClient} />
+```
+
+```js
+// Bad — ship GrainletDevtools in production bundles
+```

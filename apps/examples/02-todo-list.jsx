@@ -1,8 +1,15 @@
-import { createSignal, render } from 'grainlet';
+import { createSignal, render, onMount } from 'grainlet';
 
 export function TodoList() {
   const [todos, setTodos] = createSignal([]);
   const [inputValue, setInputValue] = createSignal('');
+
+  console.log('COMPONENT RE-RENDER OUTSIDE');
+  onMount(() => {
+    console.log('COMPONENT RE-RENDER');
+
+    return () => console.log('component cleanup in onMount');
+  });
 
   const addTodo = () => {
     const text = inputValue().trim();

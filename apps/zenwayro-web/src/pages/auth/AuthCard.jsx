@@ -50,9 +50,7 @@ export function AuthField(props) {
 }
 
 export function AuthSubmitButton(props) {
-  return (
-    <button type="submit" class={submitClass} disabled={read(props.disabled)}>
-      {props.children}
-    </button>
-  );
+  const buttonProps = { type: 'submit', class: submitClass };
+  if (read(props.disabled)) buttonProps.disabled = true;
+  return <button {...buttonProps}>{props.children}</button>;
 }

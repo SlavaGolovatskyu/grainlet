@@ -1,7 +1,14 @@
-import { createSignal, render } from 'grainlet';
+import { createSignal, render, onMount } from 'grainlet';
 
 export function BasicCounter(props) {
   const [count, setCount] = createSignal(props.initialCount || 0);
+
+  console.log('COMPONENT RE-RENDER OUTSIDE');
+  onMount(() => {
+    console.log('COMPONENT RE-RENDER');
+
+    return () => console.log('component cleanup in onMount');
+  });
 
   return (
     <div>

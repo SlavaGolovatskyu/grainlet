@@ -28,5 +28,22 @@ function constJsxAccessors() {
 export default defineConfig({
   plugins: [constJsxAccessors(), grainJsx(), tailwindcss()],
   esbuild: { jsx: 'automatic', jsxImportSource: 'grainlet' },
-  server: { port: 5174, strictPort: true },
+  server: {
+    port: 3000,
+    strictPort: true,
+    // GIS reads the page origin from the Referer on /gsi/status. Do not use
+    // `no-referrer` (or COOP/COEP isolation) — Google docs recommend sending
+    // the origin for localhost http → accounts.google.com.
+    headers: {
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+    },
+  },
+  preview: {
+    port: 3000,
+    strictPort: true,
+    headers: {
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+    },
+  },
 });
+

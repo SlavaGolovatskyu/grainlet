@@ -25,7 +25,7 @@ A row is done only when the Grainlet page loads real data or the real form, pres
 | `/privacy` | `src/pages/legal/PrivacyPage.jsx` | public | not started |
 | `/contact` | `src/pages/legal/ContactPage.jsx` | public | not started |
 | `/cookies` | `src/pages/legal/CookiesPage.jsx` | public | not started |
-| `/auth/signin` | `src/pages/SignInPage.jsx` | public | done |
+| `/auth/signin` | `src/pages/auth/SignInPage.jsx` | public | done |
 | `/auth/signup` | `src/pages/auth/SignUpPage.jsx` | public | not started |
 | `/auth/forgot-password` | `src/pages/auth/ForgotPasswordPage.jsx` | public | not started |
 | `/auth/reset-password` | `src/pages/auth/ResetPasswordPage.jsx` | public | not started |
@@ -61,4 +61,4 @@ Chrome and legal/auth/home can land together because they own separate directori
 
 ## Verification
 
-`npm test` and `npm run build` in `apps/zenwayro-web`. Browser: every route family, loading/error/empty, and one mutation path. Dev server port 5174.
+`npm test` and `npm run build` in `apps/zenwayro-web`. Browser: every route family, loading/error/empty, and one mutation path. Dev server port 3000.

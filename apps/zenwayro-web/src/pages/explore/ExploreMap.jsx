@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup, onMount } from 'grainlet';
+import { createEffect, createSignal, onCleanup, untrack } from 'grainlet';
 import maplibre from 'maplibre-gl';
 import { Protocol } from 'pmtiles';
 import { finiteCoord } from './normalize.js';
@@ -130,7 +130,6 @@ function buildPlaceMarker(place) {
 }
 
 export function ExploreMap(props) {
-  let container;
   let map;
   let resizeObserver;
   const markers = new Map();
@@ -141,6 +140,7 @@ export function ExploreMap(props) {
   let activeVariant = null;
   let lastFlownId = null;
   let activePopup = null;
+  const [host, setHost] = createSignal(null);
   const [loaded, setLoaded] = createSignal(false);
 
   function clearMarkers() {
@@ -170,12 +170,17 @@ export function ExploreMap(props) {
     });
   }
 
-  onMount(() => {
-    if (!container) return undefined;
+  // Init from a host signal so MapLibre outlives parent-driven re-renders.
+  // Ignore null refs (Grainlet re-applies a new ref fn each patch); only tear
+  // down when this effect is disposed on unmount.
+  createEffect(() => {
+    const container = host();
+    if (!container) return;
+
     ensurePmtilesProtocol();
     const isDark = document.documentElement.classList.contains('dark');
-    const center = props.center?.() ?? EUROPE_MAP_CENTER;
-    const zoom = props.zoom?.() ?? EUROPE_MAP_ZOOM;
+    const center = untrack(() => props.center?.() ?? EUROPE_MAP_CENTER);
+    const zoom = untrack(() => props.zoom?.() ?? EUROPE_MAP_ZOOM);
     map = new maplibre.Map({
       container,
       style: mapStyleUrl(isDark),
@@ -203,6 +208,7 @@ export function ExploreMap(props) {
     });
     resizeObserver = new ResizeObserver(() => map?.resize());
     resizeObserver.observe(container);
+
     onCleanup(() => {
       resizeObserver?.disconnect();
       clearMarkers();
@@ -210,7 +216,6 @@ export function ExploreMap(props) {
       map = null;
       setLoaded(false);
     });
-    return undefined;
   });
 
   createEffect(() => {
@@ -355,7 +360,7 @@ export function ExploreMap(props) {
     <div class="absolute inset-0" data-explore-map>
       <div
         ref={(node) => {
-          container = node;
+          if (node) setHost(node);
         }}
         class="map-view-raise-bottom-controls absolute inset-0 h-full w-full"
       />

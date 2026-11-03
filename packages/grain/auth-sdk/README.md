@@ -145,8 +145,14 @@ google: {
   clientId: '...',
   autoSelect: false,
   hostedDomain: 'example.com',
+  // Optional: useFedcmForPrompt: true,
 }
 ```
+
+Register the page origin under the OAuth client's **Authorized JavaScript
+origins** (for local Vite: `http://localhost` and `http://localhost:<port>`).
+A `403` on `https://accounts.google.com/gsi/status` means that origin is
+missing — fix it in Google Cloud Console; the SDK cannot work around it.
 
 The SDK loads Google Identity Services and uses its popup/One Tap prompt. A
 pre-acquired token can be supplied with

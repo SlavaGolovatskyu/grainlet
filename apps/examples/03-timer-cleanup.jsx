@@ -1,8 +1,15 @@
-import { createSignal, createEffect, render, Show } from 'grainlet';
+import { createSignal, createEffect, render, Show, onMount } from 'grainlet';
 
 export function Timer() {
   const [seconds, setSeconds] = createSignal(0);
   const [isRunning, setIsRunning] = createSignal(false);
+
+  console.log('COMPONENT RE-RENDER OUTSIDE');
+  onMount(() => {
+    console.log('COMPONENT RE-RENDER');
+
+    return () => console.log('component cleanup in onMount');
+  });
 
   createEffect(() => {
     console.log('isRunning', isRunning());

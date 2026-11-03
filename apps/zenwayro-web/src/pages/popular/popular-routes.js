@@ -9,6 +9,9 @@ export const POPULAR_TRIPS_PAGE_SIZE = 12;
 export const POPULAR_TRIPS_FIRST_PAGE = 1;
 export const POPULAR_TRIPS_DEFAULT_SORT = 'likes';
 export const POPULAR_TRIP_SORT_VALUES = ['rating', 'likes', 'newest', 'oldest'];
+/** Align with Next.js PopularTripsPage.constants (TanStack stale/gc). */
+export const POPULAR_TRIPS_STALE_MS = 5 * 60 * 1000;
+export const POPULAR_TRIPS_GC_MS = 30 * 60 * 1000;
 export const CITY_HUB_PAGE_SIZE = 50;
 export const MAX_COPY_TRIP_DAYS = 14;
 export const COUNTRY_LINK_LIMIT = 24;

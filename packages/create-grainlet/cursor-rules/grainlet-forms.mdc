@@ -1,0 +1,74 @@
+---
+description: Grainlet forms imports — FormProvider, Field, validators (examples)
+alwaysApply: false
+---
+
+# Grainlet forms (`grainlet/forms`)
+
+```js
+import {
+  createForm, FormProvider, Form, Field, ErrorMessage, FieldArray,
+  useField, useFormContext, FormContext, getIn, setIn,
+  rules, runRules, compose, all, normalizeValidators, isEmptyValue,
+  required, isNotEmpty, isEmpty, isEmail, email, isNumber, number,
+  isInteger, integer, minLength, maxLength, min, max, matches, pattern,
+  isUrl, url, oneOf, notOneOf, equalsField, test,
+} from 'grainlet/forms';
+```
+
+```jsx
+const form = createForm({
+  initialValues: { email: '', password: '' },
+  rules: {
+    email: [required(() => t('required')), isEmail(() => t('invalid'))],
+    password: [required(), minLength(8, () => t('short'))],
+  },
+  onSubmit: async (values) => api.signup(values),
+});
+
+<FormProvider /* or FormProvider with same config; children can be {(form) => …} */>
+  <Form>
+    <Field name="email" type="email" />
+    <ErrorMessage name="email">{(msg) => <p>{msg}</p>}</ErrorMessage>
+    <FieldArray name="tags">
+      {(helpers) => (
+        <>
+          <button type="button" onClick={() => helpers.push('')}>Add</button>
+          <button type="button" onClick={() => helpers.remove(0)}>Remove</button>
+        </>
+      )}
+    </FieldArray>
+  </Form>
+</FormProvider>
+```
+
+```js
+const form = useFormContext(); // or useContext(FormContext)
+const [field, meta, helpers] = useField('email');
+// field.value / field.onInput / field.onBlur — meta.error / meta.touched
+helpers.setValue('a@b.co');
+getIn(values, 'user.email'); setIn(values, 'user.email', 'x');
+```
+
+```js
+// Validators (message may be string or () => t('…'))
+required('Required'); isNotEmpty(); isEmpty();
+isEmail('Bad email'); email();           // aliases
+isNumber(); number(); isInteger(); integer();
+minLength(8); maxLength(32); min(1); max(10);
+matches(/^[a-z]+$/); pattern(/^\d+$/);
+isUrl(); url();
+oneOf(['a', 'b']); notOneOf(['admin']);
+equalsField('password', 'Must match');
+test((v) => v !== 'x' || 'Reserved');
+compose(required(), isEmail()); all(required(), minLength(3));
+rules({ email: [required(), isEmail()] });
+runRules(values, rulesMap); normalizeValidators([required()]);
+isEmptyValue(v);
+```
+
+```jsx
+// Bad — design-system Input does not accept field/meta
+<Field name="email" as={Input} />
+// Good — useField + your Input
+```

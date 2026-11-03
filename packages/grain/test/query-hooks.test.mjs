@@ -176,4 +176,47 @@ instance.unmount();
 assert.equal(client.mountCount, 0);
 client.clear();
 
+// Regression: settled errors must not refetch on every notify → re-render → setOptions.
+{
+  const loopClient = new QueryClient({
+    defaultOptions: { queries: { retry: 0, gcTime: Infinity, staleTime: 0 } },
+  });
+  let failCalls = 0;
+  let loopQuery;
+  const LoopView = createComponent(() => {
+    loopQuery = useQuery({
+      queryKey: ['error-loop'],
+      retry: 0,
+      queryFn: async () => {
+        failCalls += 1;
+        throw new Error('boom');
+      },
+    });
+    // Subscribe like real pages: reading result accessors re-renders on notify.
+    loopQuery.isError();
+    loopQuery.data();
+    return jsx('p', {}, failCalls);
+  });
+  const loopApp = createComponent(() =>
+    jsx(QueryClientProvider, { client: loopClient, children: jsx(LoopView, {}) })
+  );
+  const loopInstance = render(loopApp, document.getElementById('app'));
+  await assert.rejects(loopQuery.promise(), /boom/);
+  assert.equal(loopQuery.isError(), true);
+  const afterError = failCalls;
+  await delay(30);
+  assert.equal(
+    failCalls,
+    afterError,
+    'failed queries must not spin on observer setOptions after settle'
+  );
+  assert.equal(failCalls, 1, 'retry:0 should attempt exactly once');
+  loopInstance.unmount();
+  loopClient.clear();
+}
+
 console.log('query-hooks tests passed');
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

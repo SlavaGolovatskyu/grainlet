@@ -1,0 +1,67 @@
+---
+description: Grainlet auth imports — createAuth, session, ProtectedRoute (examples)
+alwaysApply: false
+---
+
+# Grainlet auth (`grainlet/auth`)
+
+```js
+import {
+  createAuth, AuthProvider, ProtectedRoute, AuthContext, useSession,
+  Credentials, Google, createMemoryStorage, createLocalStorageAdapter,
+  AuthError, decodeJwtPayload, getAccessTokenExpiry,
+  ACCESS_TOKEN_EXPIRY_FALLBACK_MS, ACCESS_TOKEN_EXPIRY_SAFETY_BUFFER_MS,
+} from 'grainlet/auth';
+```
+
+```js
+const auth = createAuth({
+  providers: [
+    Credentials({
+      authorize: (creds) => api.post('/api/auth/login', creds),
+    }),
+    Google({
+      getIdToken: () => getGoogleIdToken({ clientId }),
+      authorize: ({ idToken }) =>
+        api.post('/api/auth/sync', { provider: 'google', idToken }),
+    }),
+  ],
+  refresh: ({ userId, refreshToken }) =>
+    api.post('/api/auth/refresh', { userId, refreshToken }),
+  storage: createLocalStorageAdapter({ key: 'app.auth.session' }),
+  // storage: createMemoryStorage(), // tests / no persistence
+});
+```
+
+```jsx
+<AuthProvider client={auth}><App /></AuthProvider>
+
+function Account() {
+  const session = useSession(); // or useContext(AuthContext)
+  // accessors: session.status(), session.data(), session.error()
+  // methods: session.signIn('credentials', values), session.signIn('google'),
+  //          session.signOut(), session.refresh({ force: true }), session.update(patch)
+  return <p>{session.data()?.user?.email}</p>;
+}
+
+<ProtectedRoute basename="/app" redirectTo="/auth/signin">
+  <SettingsPage />
+</ProtectedRoute>
+```
+
+```js
+try {
+  await auth.signIn('credentials', { email, password });
+} catch (e) {
+  if (e instanceof AuthError) console.error(e.code, e.message);
+}
+const payload = decodeJwtPayload(accessToken);
+const expMs = getAccessTokenExpiry(accessToken)
+  ?? Date.now() + ACCESS_TOKEN_EXPIRY_FALLBACK_MS;
+// refresh slightly early: expMs - ACCESS_TOKEN_EXPIRY_SAFETY_BUFFER_MS
+```
+
+```js
+// Bad — React Query / next-auth destructuring
+const { data, status } = useSession();
+```

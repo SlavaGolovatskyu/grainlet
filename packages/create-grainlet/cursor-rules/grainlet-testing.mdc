@@ -1,0 +1,46 @@
+---
+description: Grainlet testing — render, screen, fireEvent, waitFor (examples)
+alwaysApply: false
+---
+
+# Grainlet testing (`grainlet/testing`)
+
+Requires a DOM (jsdom / happy-dom). Import from `grainlet/testing`, not `grainlet`.
+
+```js
+import {
+  render, hydrate, renderHook, screen, fireEvent, waitFor, cleanup,
+} from 'grainlet/testing';
+```
+
+```js
+const view = render(Counter, { props: { start: 1 } });
+view.container; view.instance;
+view.rerender({ start: 2 });
+view.unmount();
+
+hydrate(App, { html: serverHtml, props: {} });
+
+const hook = renderHook((props) => useSomething(props.id), {
+  initialProps: { id: 1 },
+});
+hook.result(); // current return value
+hook.rerender({ id: 2 });
+
+screen.getByTestId('save');
+screen.getByText('Hello');
+screen.queryByText(/hi/i); // null if missing
+screen.getByRole('button', { name: 'Save' });
+
+fireEvent.click(button);
+fireEvent.input(input, { target: { value: 'x' } });
+fireEvent.change(input);
+fireEvent.submit(form);
+fireEvent(node, new Event('focus'));
+
+await waitFor(() => {
+  expect(screen.getByText('Done')).toBeTruthy();
+});
+
+cleanup(); // unmount all views from this module
+```

@@ -67,7 +67,7 @@ function Welcome() {
 
   return (
     <main>
-      <h1>{() => t('welcome', { name: 'Mike' })}</h1>
+      <h1>{t('welcome', { name: 'Mike' })}</h1>
       <button onClick={() => setLocale(locale() === 'en' ? 'uk' : 'en')}>
         Switch language
       </button>
@@ -76,9 +76,12 @@ function Welcome() {
 }
 ```
 
-Use a function child (`{() => t(...)}`) wherever the DOM should update when
-the locale changes. Nested JSON is addressed with dot paths, such as
+In JSX write `{t('welcome', { name: 'Mike' })}` (and `placeholder={t('email')}`).
+`grainlet-vite` wraps those call expressions as accessors, so the DOM updates
+when the locale changes. Nested JSON is addressed with dot paths, such as
 `t('actions.continue')`.
+Outside JSX (toasts, form `rules`), pass `() => t(...)` so the string is read
+at call time.
 
 If a key is absent from the active locale, Grainlet checks `fallbackLocale`.
 If neither dictionary contains it, `t` returns the key.

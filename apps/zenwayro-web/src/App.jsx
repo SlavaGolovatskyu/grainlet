@@ -2,7 +2,7 @@ import { Router, Route } from 'grainlet/route';
 import { ProtectedRoute } from 'grainlet/auth';
 import { AppChrome } from './chrome/AppChrome.jsx';
 import { NotFoundPage } from './chrome/NotFoundPage.jsx';
-import { SignInPage } from './pages/SignInPage.jsx';
+import { SignInPage } from './pages/auth/SignInPage.jsx';
 import { SignUpPage } from './pages/auth/SignUpPage.jsx';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage.jsx';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage.jsx';

@@ -1,0 +1,75 @@
+---
+description: Grainlet SSR imports — render, Head, createNodeHandler (examples)
+alwaysApply: false
+---
+
+# Grainlet SSR (`grainlet/ssr`)
+
+```js
+import {
+  renderToString, renderToStringAsync, renderToReadableStream,
+  createRequestHandler, prerenderPaths,
+  renderDocument, serializeDocumentState, wrapHtmlDocument, hydrate,
+  createSSRContext, runWithSSR, isServer, getSSRContext,
+  setSSRContextStorage, ensureSSRContextStorage,
+  escapeHtml, serializeVnode,
+  Head, Title, Meta, HeadLink, Canonical, JsonLd, OpenGraph,
+  applyRouteHeadEntries, registerHeadEntry, renderHead,
+  createNodeHandler, writePrerendered, // node entry: grainlet/ssr (node)
+} from 'grainlet/ssr';
+```
+
+```js
+const html = renderToString(App, {}, { url: '/about' });
+const htmlAsync = await renderToStringAsync(App, {}, { url: '/about' });
+const stream = await renderToReadableStream(App, {}, { url: '/about', nonce });
+
+const body = '<div id="app">…</div>';
+wrapHtmlDocument(body, { title: 'App', scripts: ['/client.js'] });
+renderDocument(body, { title: 'App', state: { query: … } });
+serializeDocumentState({ query: dehydrated });
+
+runWithSSR(async () => { /* per-request work */ });
+isServer(); createSSRContext(); getSSRContext();
+ensureSSRContextStorage(); setSSRContextStorage(als);
+escapeHtml('<x>'); serializeVnode(vnode);
+```
+
+```jsx
+<Head>
+  <Title>Project {id()}</Title>
+  <Meta name="description" content="…" />
+  <HeadLink rel="canonical" href="https://example.com/p" />
+  <Canonical href="https://example.com/p" />
+  <OpenGraph title="Hi" image="https://…" />
+  <JsonLd data={{ '@type': 'WebSite', name: 'App' }} />
+</Head>
+registerHeadEntry({ tag: 'meta', props: { name: 'theme-color', content: '#000' } });
+applyRouteHeadEntries(entries); renderHead();
+```
+
+```js
+// Node
+export const handler = createNodeHandler({
+  App,
+  routes,
+  document: { scripts: ['/client.js'] },
+});
+await writePrerendered({ outDir: 'dist', paths: ['/', '/about'], … });
+prerenderPaths(['/', '/about']);
+createRequestHandler({ App, routes });
+```
+
+```js
+// Client hydration (often hydrate from grainlet)
+import { hydrate } from 'grainlet';
+import { hydrateRouterState } from 'grainlet/route';
+const queryClient = new QueryClient(); // per page load
+hydrateRouterState(state, queryClient);
+hydrate(App, document.getElementById('app'), { queryClient });
+```
+
+```js
+// Bad — module-scope QueryClient on the server
+const queryClient = new QueryClient();
+```

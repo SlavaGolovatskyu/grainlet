@@ -1,0 +1,50 @@
+---
+description: Grainlet utils — object, path, guards, async, collections (examples)
+alwaysApply: false
+---
+
+# Grainlet utils (`grainlet/utils`)
+
+```js
+import {
+  isObject, isPlainObject, functionalUpdate, resolveValue, stableHash,
+  partialMatch, replaceEqualDeep, deepEqual, deepClone,
+  toPath, getIn, setIn,
+  isDefined, isNullish, isString, isNumber, isBoolean, isFunction,
+  isDate, isRegExp, isMap, isSet, isTypedArray, isPromiseLike,
+  compact, pick, omit, groupBy, keyBy, uniqueBy,
+  sleep, exponentialBackoffDelay, withTimeout, throwIfAborted, isAbortError,
+  noop, identity, once, debounce, throttle,
+  Subscribable, FocusManager, OnlineManager, focusManager, onlineManager,
+} from 'grainlet/utils';
+```
+
+```js
+isObject(x); isPlainObject(x);
+functionalUpdate((n) => n + 1, 1); // → 2; functionalUpdate(5, 1) → 5
+resolveValue(() => 1); resolveValue(1);
+stableHash({ a: 1 }); partialMatch({ a: 1 }, { a: 1, b: 2 });
+replaceEqualDeep(prev, next); deepEqual(a, b); deepClone(obj);
+
+toPath('a.b[0]'); getIn(obj, 'a.b'); setIn(obj, 'a.b', 1);
+
+isDefined(x); isNullish(x); isString(x); isNumber(x); isBoolean(x);
+isFunction(fn); isDate(d); isRegExp(r); isMap(m); isSet(s);
+isTypedArray(u8); isPromiseLike(p);
+
+compact([0, 1, null]); pick(obj, ['a']); omit(obj, ['b']);
+groupBy(rows, (r) => r.type); keyBy(rows, (r) => r.id);
+uniqueBy(rows, (r) => r.id);
+
+await sleep(100);
+exponentialBackoffDelay(3, { base: 100, max: 2000 });
+await withTimeout(promise, 1000);
+throwIfAborted(signal); isAbortError(err);
+
+noop(); identity(1); once(fn);
+const d = debounce(fn, 200); const t = throttle(fn, 200);
+
+const sub = new Subscribable(); sub.subscribe(listener);
+new FocusManager(); new OnlineManager();
+focusManager.setFocused(true); onlineManager.setOnline(true);
+```

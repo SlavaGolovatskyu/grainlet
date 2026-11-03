@@ -59,11 +59,22 @@ export const MAP_MIN_ZOOM = 3;
 export const FIT_BOUNDS_PADDING = 60;
 export const FIT_BOUNDS_MAX_ZOOM = 15;
 
-/** Same asset base as the source app (`NEXT_PUBLIC_MAP_ASSETS_BASE`). */
-export const MAP_ASSETS_BASE = 'https://assets.zenwayro.com';
+/** Map tile/style CDN. Prefer `VITE_MAP_ASSETS_BASE` (falls back to production CDN). */
+export function mapAssetsBase() {
+  try {
+    const value = import.meta.env?.VITE_MAP_ASSETS_BASE;
+    if (typeof value === 'string' && value.trim()) return value.replace(/\/$/, '');
+  } catch {
+    /* import.meta is absent outside Vite */
+  }
+  return 'https://assets.zenwayro.com';
+}
+
+export const MAP_ASSETS_BASE = mapAssetsBase();
 export const MAP_STYLE_LIGHT_URL = `${MAP_ASSETS_BASE}/styles/light_theme.json`;
 export const MAP_STYLE_DARK_URL = `${MAP_ASSETS_BASE}/styles/dark_theme.json`;
 
 export function mapStyleUrl(isDark) {
-  return isDark ? MAP_STYLE_DARK_URL : MAP_STYLE_LIGHT_URL;
+  const base = mapAssetsBase();
+  return `${base}/styles/${isDark ? 'dark' : 'light'}_theme.json`;
 }

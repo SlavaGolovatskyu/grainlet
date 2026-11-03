@@ -32,6 +32,7 @@ const TEXT_EXTENSIONS = new Set([
   '.svg',
   '.txt',
   '.map',
+  '.mdc',
 ]);
 
 function usage() {
@@ -99,6 +100,18 @@ if (!existsSync(templateDir)) {
 }
 
 copyTemplate(templateDir, target, projectName);
+copyTemplate(
+  resolve(__dirname, '../cursor-rules'),
+  join(target, '.cursor', 'rules'),
+  projectName
+);
+if (templateName === 'template-ssr') {
+  copyTemplate(
+    resolve(__dirname, '../cursor-rules-ssr'),
+    join(target, '.cursor', 'rules'),
+    projectName
+  );
+}
 
 console.log(`
 Created ${projectName}

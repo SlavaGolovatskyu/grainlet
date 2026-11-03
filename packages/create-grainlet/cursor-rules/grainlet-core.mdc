@@ -1,0 +1,73 @@
+---
+description: Grainlet core imports — signals, flow, render (with examples)
+globs: "**/*.{js,jsx,ts,tsx}"
+alwaysApply: false
+---
+
+# Grainlet core (`grainlet`)
+
+```js
+import {
+  createSignal, createEffect, createMemo, batch, createDeferred,
+  onMount, onCleanup, startTransition, useTransition, untrack, isServer,
+  createComponent, jsx, render, hydrate, Fragment,
+  Show, For, VirtualList, Switch, Match, Suspense, ErrorBoundary, Portal,
+  createContext, useContext, createResource, lazy, configureHydration,
+} from 'grainlet';
+```
+
+## Signals
+
+```js
+const [count, setCount] = createSignal(0);          // count() / setCount(1)
+const doubled = createMemo(() => count() * 2);      // cached derived
+createEffect(() => console.log(count()));           // subscribe
+onCleanup(() => clearInterval(id));                 // inside effect/component
+onMount(() => el.focus());                          // after first mount
+batch(() => { setA(1); setB(2); });                 // one flush
+untrack(() => count());                             // read without tracking
+const deferred = createDeferred(() => heavy(count()));
+const [pending, start] = useTransition();
+startTransition(() => setCount(1));
+if (isServer()) { /* skip browser APIs */ }
+```
+
+## Render / JSX
+
+```js
+render(App, document.getElementById('app'));
+hydrate(App, document.getElementById('app'), props);
+createComponent(Button, { label: 'Go' });
+jsx('div', { class: 'box' }, 'hi');
+<> <span /> <span /> </>   // Fragment
+configureHydration({ warnOnMismatch: true });
+```
+
+## Flow
+
+```jsx
+<Show when={user} fallback={<p>Guest</p>}>{(u) => <p>{u().name}</p>}</Show>
+<For each={items}>{(item, i) => <li>{item.name} {i()}</li>}</For>
+<VirtualList each={rows} estimateSize={32}>{(row) => <div>{row.id}</div>}</VirtualList>
+<Switch fallback={<p>?</p>}>
+  <Match when={tab() === 'a'}><A /></Match>
+  <Match when={tab() === 'b'}><B /></Match>
+</Switch>
+<Suspense fallback={<p>…</p>}><LazyPage /></Suspense>
+<ErrorBoundary fallback={(err, reset) => <button onClick={reset}>{err.message}</button>}>
+  <Page />
+</ErrorBoundary>
+<Portal mount={document.body}><Modal /></Portal>
+```
+
+## Data / context / code-split
+
+```js
+const [data] = createResource(id, (id) => fetch(`/api/${id}`).then((r) => r.json()));
+const Ctx = createContext(null);
+<Ctx.Provider value={api}>{children}</Ctx.Provider>
+const api = useContext(Ctx);
+const LazyPage = lazy(() => import('./Page.jsx'));
+```
+
+In JSX write `{count()}` / `{t('key')}` — do not hand-wrap `{() => count()}`. Use `class`, not `className`.

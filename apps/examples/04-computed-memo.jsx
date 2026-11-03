@@ -1,4 +1,4 @@
-import { createSignal, createMemo, render } from 'grainlet';
+import { createSignal, createMemo, render, onMount } from 'grainlet';
 
 export function Calculator() {
   const [price, setPrice] = createSignal(100);
@@ -15,6 +15,14 @@ export function Calculator() {
   const totalWithCount = createMemo(() => {
     setCalculationCount((c) => c + 1);
     return total();
+  });
+
+  console.log('COMPONENT RE-RENDER OUTSIDE');
+
+  onMount(() => {
+    console.log('COMPONENT RE-RENDER');
+
+    return () => console.log('component cleanup in onMount');
   });
 
   return (

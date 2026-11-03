@@ -34,7 +34,21 @@ import {
   PROP_DISPOSES,
   NODE_KEY,
   REF_KEY,
+  GRAIN_OWNED,
 } from './binding-keys.js';
+
+function markOwned(node) {
+  if (node) node[GRAIN_OWNED] = true;
+  return node;
+}
+
+function isOwned(node) {
+  return node != null && node[GRAIN_OWNED] === true;
+}
+
+function ownedText(value = '') {
+  return markOwned(document.createTextNode(value == null ? '' : String(value)));
+}
 
 function invokeRef(ref, el) {
   if (typeof ref === 'function') ref(el);
@@ -109,9 +123,9 @@ function bindText(node, accessor) {
 
 function createTextFromValue(value) {
   if (isAccessor(value)) {
-    return bindText(document.createTextNode(''), value);
+    return bindText(ownedText(''), value);
   }
-  return document.createTextNode(toText(value));
+  return ownedText(toText(value));
 }
 
 /**
@@ -155,7 +169,7 @@ function createDynamicChild(accessor, owner, path, existingHost) {
     while (host.firstChild) {
       removeNode(host, host.firstChild, owner, path);
     }
-    host.appendChild(document.createTextNode(text));
+    host.appendChild(ownedText(text));
   });
 
   return host;
@@ -185,7 +199,7 @@ function createAccessorChild(accessor, owner, path) {
       if (node.nodeValue !== text) node.nodeValue = text;
       return;
     }
-    node = document.createTextNode(text);
+    node = ownedText(text);
   });
 
   if (node) {
@@ -431,19 +445,19 @@ function appendVdomChildren(parent, children, owner, path) {
 
 export function createDom(vdom, owner, path = '0') {
   if (vdom == null || vdom === false || vdom === true) {
-    return document.createTextNode('');
+    return ownedText('');
   }
 
   if (typeof vdom === 'string' || typeof vdom === 'number') {
-    return document.createTextNode(String(vdom));
+    return ownedText(vdom);
   }
 
   if (isAccessor(vdom)) {
-    return createAccessorChild(vdom, owner, path);
+    return markOwned(createAccessorChild(vdom, owner, path));
   }
 
   if (isGrainTemplate(vdom)) {
-    return instantiateTemplate(vdom);
+    return markOwned(instantiateTemplate(vdom));
   }
 
   if (Array.isArray(vdom)) {
@@ -453,7 +467,7 @@ export function createDom(vdom, owner, path = '0') {
   }
 
   if (typeof vdom !== 'object') {
-    return document.createTextNode(String(vdom));
+    return ownedText(vdom);
   }
 
   const { type } = vdom;
@@ -470,14 +484,14 @@ export function createDom(vdom, owner, path = '0') {
       source: vdom.__source,
     });
     setNodeKey(host, vnodeKey(vdom));
-    return host;
+    return markOwned(host);
   }
 
   if (!isSafeTagName(String(type))) {
-    return document.createTextNode('');
+    return ownedText('');
   }
 
-  const el = document.createElement(type);
+  const el = markOwned(document.createElement(type));
   applyProps(el, vdom.props, owner);
   setNodeKey(el, vnodeKey(vdom));
   if (isScriptTag(type)) {
@@ -532,8 +546,7 @@ export function patchDom(parent, oldDom, newVdom, owner, path = '0') {
   if (newVdom == null || newVdom === false || newVdom === true) {
     clearChildRange(owner, path);
     disposeTextBinding(oldDom);
-    const empty = document.createTextNode('');
-    return replaceNode(parent, oldDom, empty);
+    return replaceNode(parent, oldDom, ownedText(''));
   }
 
   if (isGrainTemplate(newVdom)) {
@@ -571,9 +584,10 @@ export function patchDom(parent, oldDom, newVdom, owner, path = '0') {
     if (oldDom && oldDom.nodeType === Node.TEXT_NODE) {
       disposeTextBinding(oldDom);
       if (oldDom.nodeValue !== text) oldDom.nodeValue = text;
+      markOwned(oldDom);
       return oldDom;
     }
-    return replaceNode(parent, oldDom, document.createTextNode(text));
+    return replaceNode(parent, oldDom, ownedText(text));
   }
 
   if (Array.isArray(newVdom)) {
@@ -651,7 +665,10 @@ export function patchDom(parent, oldDom, newVdom, owner, path = '0') {
 }
 
 function patchChildren(parentEl, newChildren, owner, path) {
-  const oldNodes = [...parentEl.childNodes];
+  // Only reconcile nodes Grainlet created. Third-party libraries (MapLibre,
+  // charting, etc.) may append canvas/controls under a host with no VDOM
+  // children; wiping those on every parent re-render leaves an empty shell.
+  const oldNodes = [...parentEl.childNodes].filter(isOwned);
   const keyed = newChildren.some((child) => vnodeKey(child) != null);
 
   if (!keyed) {

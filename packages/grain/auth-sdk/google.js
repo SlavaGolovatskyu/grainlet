@@ -56,7 +56,12 @@ export async function getGoogleIdToken(config = {}, input = {}) {
         cancel_on_tap_outside: config.cancelOnTapOutside ?? true,
         context: config.context ?? 'signin',
         itp_support: config.itpSupport ?? true,
+        // Popup UX for the GIS credential flow (not next-auth redirect).
+        // Optional FedCM: pass useFedcmForPrompt: true when you opt in.
         ux_mode: 'popup',
+        ...(config.useFedcmForPrompt != null
+          ? { use_fedcm_for_prompt: config.useFedcmForPrompt }
+          : {}),
         nonce: input.nonce ?? config.nonce,
         login_hint: input.loginHint,
         hd: input.hostedDomain ?? config.hostedDomain,
