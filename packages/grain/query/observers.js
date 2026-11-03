@@ -85,7 +85,9 @@ export class QueryObserver {
     });
     const query = this.client.getQueryCache().build(this.client, resolved);
     const changed = query !== this.query;
-    const wasEnabled = this.options ? enabled(this.options, this.query) : false;
+    // First mount has no prior options — that is not enabled false→true.
+    // Treating it as such refetches fresh hydrated/SSR data on every mount.
+    const wasEnabled = this.options ? enabled(this.options, this.query) : undefined;
     const nowEnabled = enabled(resolved, query);
     this.options = resolved;
     if (changed) {
@@ -106,7 +108,7 @@ export class QueryObserver {
     this.updateInterval();
     if (shouldFetchOnUpdate(query, resolved, {
       queryChanged: changed,
-      enabledJustTurnedOn: !wasEnabled && nowEnabled,
+      enabledJustTurnedOn: wasEnabled === false && nowEnabled,
     })) {
       query.fetch(resolved).catch(() => {});
     }
